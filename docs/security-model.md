@@ -27,3 +27,27 @@ Every agent decision is logged as an `AgentEvent` with phase, category, severity
 ## Mock / Simulation Labels
 
 The UI always labels mock or simulated activity explicitly. Transaction digests generated during simulation are clearly marked "Simulation" and never linked as real Sui Explorer URLs without a real digest.
+
+## Two-Phase Sponsor Signing
+
+Sponsor gas is committed only after the user signs the exact bytes the server prepared:
+
+1. **Prepare** (`POST /api/sponsor/prepare`): server builds the transaction, dry-runs it, stores the intent (TTL 5 min, one-time use), returns `txBytes` + `intentId`. No sponsor signature at this stage.
+2. **User signs** the exact returned bytes (no rebuild). The wallet returns `{ bytes, signature }`.
+3. **Execute** (`POST /api/sponsor/execute`): server consumes the intent, verifies byte integrity (byte-level comparison), verifies the user signature cryptographically, then sponsor-signs the same stored bytes and submits with `[userSig, sponsorSig]`.
+
+This prevents:
+- Byte substitution attacks (byte comparison + signature verification)
+- Race conditions (sponsor never signs bytes the user hasn't seen)
+- Gas waste on invalid transactions (dry run gates intent creation)
+
+## Wallet Compatibility Feature Flag
+
+`NEXT_PUBLIC_ALLOW_PHANTOM_SPONSORED_TX` (default: `false`) controls whether Phantom users can bypass the wallet compatibility warning to attempt the real sponsored mint.
+
+- `false` (default): Phantom real mint is blocked. User is directed to Slush Wallet. Simulation scenarios still work.
+- `true`: Phantom users see a warning modal and can opt in (developer/testing mode only).
+
+Slush Wallet is always allowed regardless of this flag.
+
+This flag is `NEXT_PUBLIC_` because it controls client-side UI behavior. It does NOT affect the sponsor private key, API security, or transaction validation.

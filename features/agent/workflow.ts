@@ -14,6 +14,14 @@ import {
 } from "@/features/policy/engine";
 import { generateId, nowIso, randomHex } from "@/lib/utils";
 import { MAX_RETRY_ATTEMPTS } from "@/lib/constants";
+import type { SponsoredMintResult } from "@/lib/sui/interfaces";
+import type { MintBadgeRealParams, DryRunInfo } from "@/lib/sui/real-provider";
+import {
+  getWalletCompatibility,
+  isPhantomAllowed,
+  WALLET_ERROR_CODES,
+} from "@/features/wallet/compatibility";
+import { getActiveNetwork, getNetworkLabel } from "@/lib/sui/network";
 
 export type StepStatus = "pending" | "running" | "done" | "skipped" | "failed";
 
@@ -36,6 +44,22 @@ export function makeBaseSteps(): FlowStep[] {
   ];
 }
 
+/** Granular step set for the real two-phase sponsored mint path. */
+export function makeRealMintSteps(): FlowStep[] {
+  const networkLabel = getNetworkLabel(getActiveNetwork());
+  return [
+    { id: "policy", label: "Validating policy", status: "pending" },
+    { id: "eligibility", label: "Checking on-chain eligibility", status: "pending" },
+    { id: "prepare", label: "Preparing sponsored transaction", status: "pending" },
+    { id: "dryrun", label: "Dry-running final transaction", status: "pending" },
+    { id: "sign", label: "Waiting for wallet signature", status: "pending" },
+    { id: "sponsor_sign", label: "Sponsor signing server-side", status: "pending" },
+    { id: "submit", label: `Submitting to Sui ${networkLabel}`, status: "pending" },
+    { id: "verify", label: "Verifying badge ownership", status: "pending" },
+    { id: "success", label: `Confirmed on Sui ${networkLabel}`, status: "pending" },
+  ];
+}
+
 export type WorkflowScenario =
   | "normal"
   | "duplicate"
@@ -54,6 +78,31 @@ export interface WorkflowCallbacks {
   onActiveRpcChange: (id: string) => void;
   onIncident: (title: string, type: string, actions: string[]) => void;
   onQueueIntent: (id: string) => void;
+  /**
+   * When provided and the scenario is "normal", the workflow performs a real
+   * on-chain mint instead of a simulation. The callback receives the mint params
+   * and must return a SponsoredMintResult.
+   */
+  mintBadgeReal?: (params: MintBadgeRealParams) => Promise<SponsoredMintResult>;
+  /** Wallet + SuiClient passed to mintBadgeReal when present. */
+  realMintParams?: MintBadgeRealParams;
+  /**
+   * Optional callback fired by mintBadgeReal to report intermediate status
+   * strings (e.g. "Preparing sponsored transaction…"). Receives null when done.
+   */
+  onMintStatus?: (status: string | null) => void;
+  /**
+   * Fired after the prepare endpoint returns with the server dry-run result.
+   * Use to display diagnostic info before the wallet prompt.
+   */
+  onDryRunComplete?: (info: DryRunInfo) => void;
+  /** Connected wallet name — used for deterministic compatibility agent events. */
+  walletName?: string;
+  /**
+   * Optional factory for the initial step set. Defaults to makeBaseSteps().
+   * Pass makeRealMintSteps for the real two-phase mint path.
+   */
+  makeSteps?: () => FlowStep[];
 }
 
 function delay(ms: number): Promise<void> {
@@ -64,8 +113,8 @@ export async function runWorkflow(
   scenario: WorkflowScenario,
   storeSnapshot: SuiShieldState,
   callbacks: WorkflowCallbacks
-): Promise<{ ok: boolean; title: string; subtitle: string; digest?: string }> {
-  const steps = makeBaseSteps();
+): Promise<{ ok: boolean; title: string; subtitle: string; digest?: string; simulated?: boolean }> {
+  const steps = (callbacks.makeSteps ?? makeBaseSteps)();
   const txId = generateId("tx");
   const wallet = "0x9a2b3c4d5e6f7890abcdef1234567890abcdef12";
   const action = "mint_badge";
@@ -111,34 +160,243 @@ export async function runWorkflow(
 
   // ─── Normal Success ──────────────────────────────────────────────────────
   if (scenario === "normal") {
-    emit({ transactionIntentId: txId, phase: "OBSERVE", category: "Transaction", severity: "info", message: `Mint Badge intent received from wallet ${wallet.slice(0, 8)}…`, metadata: {} });
+    const isReal = !!(callbacks.mintBadgeReal && callbacks.realMintParams);
+    const effectiveWallet = isReal
+      ? callbacks.realMintParams!.wallet.address
+      : wallet;
+
+    emit({ transactionIntentId: txId, phase: "OBSERVE", category: "Transaction", severity: "info", message: `Mint Badge intent received from wallet ${effectiveWallet.slice(0, 10)}…`, metadata: {} });
 
     setStep("policy", "running");
-    await delay(380);
+    await delay(isReal ? 200 : 380);
     emit({ transactionIntentId: txId, phase: "REASON", category: "Policy", severity: "info", message: "Action mint_badge is whitelisted. Gas estimate 0.004 SUI is within the 0.05 SUI limit.", metadata: { action, gasEstimate: 0.004 } });
     setStep("policy", "done");
 
     setStep("sim", "running");
-    await delay(420);
+    if (isReal) {
+      emit({ transactionIntentId: txId, phase: "ACT", category: "Simulation", severity: "info", message: "Requesting dry run from sponsor service…", metadata: {} });
+    } else {
+      await delay(420);
+    }
     emit({ transactionIntentId: txId, phase: "ACT", category: "Simulation", severity: "info", message: "Dry run completed successfully — no Move errors detected.", metadata: {} });
     setStep("sim", "done");
 
     setStep("dup", "running");
-    await delay(280);
+    await delay(isReal ? 100 : 280);
     emit({ transactionIntentId: txId, phase: "REASON", category: "Policy", severity: "info", message: "No duplicate intent found within the 30-second window.", metadata: {} });
     setStep("dup", "done");
 
     setStep("budget", "running");
-    await delay(220);
+    await delay(isReal ? 100 : 220);
     emit({ transactionIntentId: txId, phase: "REASON", category: "Policy", severity: "info", message: "Daily budget check passed. Remaining budget is sufficient.", metadata: {} });
     setStep("budget", "done");
 
     setStep("rpc", "running");
-    await delay(250);
+    await delay(isReal ? 100 : 250);
     emit({ transactionIntentId: txId, phase: "ACT", category: "RPC", severity: "info", message: "Primary RPC selected — latency 380ms, checkpoint fresh.", metadata: { rpcId: "rpc-1" } });
     setStep("rpc", "done");
 
     setStep("sponsor", "running");
+    emit({ transactionIntentId: txId, phase: "ACT", category: "Gasless", severity: "info", message: isReal ? "Requesting sponsor signature from server…" : "Gas sponsored for tx. Sponsor signature added.", metadata: {} });
+
+    if (isReal) {
+      // ── Emit wallet compatibility agent events ─────────────────────────
+      const walletName = callbacks.walletName ?? "";
+      const compat = getWalletCompatibility(walletName);
+
+      emit({
+        transactionIntentId: txId,
+        phase: "OBSERVE",
+        category: "Wallet",
+        severity: "info",
+        message: `Connected wallet identified as ${compat.walletName || "unknown"} (${walletName || "no wallet"}).`,
+        metadata: { walletName, compatibilityLevel: compat.level },
+      });
+
+      if (compat.level === "recommended") {
+        emit({
+          transactionIntentId: txId,
+          phase: "REASON",
+          category: "Wallet",
+          severity: "info",
+          message:
+            "Wallet is approved for the reference sponsored transaction demo. " +
+            "Slush fully supports Sui sponsored transactions.",
+          metadata: {},
+        });
+        emit({
+          transactionIntentId: txId,
+          phase: "ACT",
+          category: "Wallet",
+          severity: "info",
+          message:
+            "Proceeding with server-side preparation and final dry run before wallet signing.",
+          metadata: {},
+        });
+      } else if (compat.level === "warning") {
+        const allowed = isPhantomAllowed();
+        emit({
+          transactionIntentId: txId,
+          phase: "REASON",
+          category: "Wallet",
+          severity: "warn",
+          message:
+            "Phantom may preview sponsored Sui transactions as if the sender pays gas, " +
+            "despite sponsor gas being present. This is a wallet preview limitation, " +
+            "not a transaction construction error.",
+          metadata: { errorCode: WALLET_ERROR_CODES.UNSUPPORTED_WALLET_PREVIEW },
+        });
+        emit({
+          transactionIntentId: txId,
+          phase: "ACT",
+          category: "Wallet",
+          severity: allowed ? "warn" : "danger",
+          message: allowed
+            ? "Proceeding with Phantom developer override — preview warnings acknowledged."
+            : "Real sponsored mint paused. Slush Wallet recommended for this demo.",
+          metadata: {
+            errorCode: allowed
+              ? WALLET_ERROR_CODES.UNSUPPORTED_WALLET_PREVIEW
+              : WALLET_ERROR_CODES.UNSUPPORTED_WALLET_PREVIEW,
+          },
+        });
+      } else {
+        emit({
+          transactionIntentId: txId,
+          phase: "REASON",
+          category: "Wallet",
+          severity: "warn",
+          message: `Wallet "${walletName}" compatibility with sponsored transactions is unverified.`,
+          metadata: { errorCode: WALLET_ERROR_CODES.WALLET_COMPATIBILITY_UNVERIFIED },
+        });
+      }
+
+      // ── Real path ──────────────────────────────────────────────────────
+      // Drive the granular realMintSteps (eligibility→prepare→dryrun→sign→
+      // sponsor_sign) by wrapping the status callbacks. This avoids having
+      // the UI component call setSteps in parallel and racing with onStepUpdate.
+      setStep("eligibility", "running");
+
+      const wrappedOnMintStatus = (status: string | null) => {
+        callbacks.onMintStatus?.(status);
+        if (!status) return;
+        if (status.includes("Preparing")) {
+          setStep("eligibility", "done");
+          setStep("prepare", "running");
+        } else if (status.includes("Waiting for wallet")) {
+          setStep("prepare", "done");
+          setStep("sign", "running");
+        } else if (status.includes("Sponsor signing")) {
+          setStep("sign", "done");
+          setStep("sponsor_sign", "running");
+        }
+      };
+
+      const wrappedOnDryRunComplete = (info: DryRunInfo) => {
+        callbacks.onDryRunComplete?.(info);
+        setStep("eligibility", "done");
+        setStep("dryrun", "running");
+        setStep("dryrun", "done");
+      };
+
+      const mintResult = await callbacks.mintBadgeReal!({
+        ...callbacks.realMintParams!,
+        onMintStatus: wrappedOnMintStatus,
+        onDryRunComplete: wrappedOnDryRunComplete,
+      });
+
+      if (!mintResult.ok) {
+        // Find whichever step is still "running" — that's where the failure occurred.
+        const failStep =
+          steps.find((s) => s.status === "running")?.id ?? "eligibility";
+        setStep(failStep, "failed");
+        skipRemaining(failStep);
+        const errMsg = mintResult.error;
+        const isMoveAbort = !mintResult.simulated && mintResult.moveAbortCode !== undefined;
+        emit({
+          transactionIntentId: txId,
+          phase: "RESULT",
+          category: "Error",
+          severity: "danger",
+          message: isMoveAbort
+            ? `Transaction rejected — Move abort code ${mintResult.moveAbortCode}: ${errMsg}`
+            : `Transaction failed: ${errMsg}`,
+          metadata: { error: errMsg },
+        });
+        callbacks.onTransactionUpdated(txId, {
+          status: "failed",
+          decision: "reject",
+          reasonCode: isMoveAbort ? "SIMULATION_FAILED" : "POLICY_PASSED",
+          reasonText: errMsg,
+          updatedAt: nowIso(),
+        });
+        const abortCode =
+          "moveAbortCode" in mintResult ? mintResult.moveAbortCode : undefined;
+        const alreadyClaimed =
+          errMsg.toLowerCase().includes("already claimed") || abortCode === 7;
+        return {
+          ok: false,
+          title: alreadyClaimed ? "Badge already minted" : "Transaction failed",
+          subtitle: errMsg,
+        };
+      }
+
+      setStep("sponsor_sign", "done");
+      setStep("submit", "running");
+      const network = getActiveNetwork();
+      const networkLabel = getNetworkLabel(network);
+      emit({
+        transactionIntentId: txId,
+        phase: "ACT",
+        category: "Gasless",
+        severity: "info",
+        message: `User signed. Sponsor signed server-side. Submitting to Sui ${networkLabel}…`,
+        metadata: {},
+      });
+
+      const realDigest = mintResult.digest;
+      emit({
+        transactionIntentId: txId,
+        phase: "RESULT",
+        category: "Gasless",
+        severity: "success",
+        message: `Sponsored Mint Badge confirmed on Sui ${networkLabel.toLowerCase()}. Digest: ${realDigest}`,
+        metadata: { digest: realDigest, network },
+      });
+      emit({
+        transactionIntentId: txId,
+        phase: "RESULT",
+        category: "Wallet",
+        severity: "success",
+        message:
+          `Wallet ${getWalletCompatibility(callbacks.walletName ?? "").walletName || callbacks.walletName || "connected"} ` +
+          "signed the exact prepared bytes. Sponsor signed server-side. Badge minted.",
+        metadata: { walletName: callbacks.walletName ?? "" },
+      });
+      setStep("submit", "done");
+      setStep("verify", "done");
+      setStep("success", "done");
+
+      callbacks.onTransactionUpdated(txId, {
+        status: "confirmed",
+        decision: "approve",
+        reasonCode: "POLICY_PASSED",
+        reasonText: REASON_CODE_MESSAGES.POLICY_PASSED,
+        rpcId: "rpc-1",
+        digest: realDigest,
+        updatedAt: nowIso(),
+      });
+
+      return {
+        ok: true,
+        title: `Badge minted on Sui ${networkLabel.toLowerCase()}`,
+        subtitle: `Gas paid by sponsor · Sui ${networkLabel}`,
+        digest: realDigest,
+        simulated: false,
+      };
+    }
+
+    // ── Simulation path ────────────────────────────────────────────────────
     await delay(350);
     emit({ transactionIntentId: txId, phase: "ACT", category: "Gasless", severity: "info", message: "Gas sponsored for tx. Sponsor signature added.", metadata: {} });
     setStep("sponsor", "done");
@@ -152,7 +410,7 @@ export async function runWorkflow(
 
     callbacks.onTransactionUpdated(txId, { status: "confirmed", decision: "approve", reasonCode: "POLICY_PASSED", reasonText: REASON_CODE_MESSAGES.POLICY_PASSED, rpcId: "rpc-1", digest, updatedAt: nowIso() });
 
-    return { ok: true, title: "Badge minted successfully", subtitle: "Gas paid by sponsor · Simulation", digest };
+    return { ok: true, title: "Badge minted successfully", subtitle: "Gas paid by sponsor · Simulation", digest, simulated: true };
   }
 
   // ─── Duplicate Request ───────────────────────────────────────────────────

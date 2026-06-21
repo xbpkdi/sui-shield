@@ -9,6 +9,7 @@ import type {
   Incident,
 } from "@/types";
 import { generateId, nowIso, nowTime, randomHex } from "@/lib/utils";
+import { getActiveNetwork, getDefaultRpcUrl } from "@/lib/sui/network";
 
 // ─── Derived metric helpers ────────────────────────────────────────────────
 
@@ -31,10 +32,12 @@ function deriveBlockedDuplicates(txs: TransactionIntent[]): number {
 
 // ─── Initial state ──────────────────────────────────────────────────────────
 
+const activeNetwork = getActiveNetwork();
+
 const initialProject: Project = {
   id: "proj-demo",
   name: "Demo Sui dApp",
-  network: "testnet",
+  network: activeNetwork,
   mode: "healthy",
   createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
 };
@@ -55,7 +58,7 @@ const initialRpcEndpoints: RpcEndpoint[] = [
   {
     id: "rpc-1",
     name: "Mysten Public RPC",
-    url: "https://fullnode.testnet.sui.io:443",
+    url: getDefaultRpcUrl(activeNetwork),
     role: "primary",
     status: "healthy",
     latencyMs: 380,
@@ -380,6 +383,7 @@ export function selectActiveRpc(state: SuiShieldState): RpcEndpoint | undefined 
   return state.rpcEndpoints.find((r) => r.id === state.activeRpcId);
 }
 
+/** Use with `useShallow` — `.filter()` returns a new array reference each call. */
 export function selectActiveIncidents(state: SuiShieldState): Incident[] {
   return state.incidents.filter((i) => i.status === "active");
 }

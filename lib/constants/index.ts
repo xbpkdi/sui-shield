@@ -2,6 +2,9 @@ export const APP_VERSION = "0.1.0";
 export const APP_NAME = "SuiShield";
 export const APP_SUBTITLE = "Gasless Agent";
 
+export const GITHUB_HANDLE = "xbpkdi";
+export const GITHUB_URL = `https://github.com/${GITHUB_HANDLE}`;
+
 export const MAX_RETRY_ATTEMPTS = 3;
 export const RPC_TIMEOUT_MS = 5000;
 export const DUPLICATE_WINDOW_DEFAULT_SECONDS = 30;

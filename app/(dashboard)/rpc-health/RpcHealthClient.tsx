@@ -1,7 +1,14 @@
 "use client";
 
 import { Activity } from "lucide-react";
-import { GlassCard, MotionGlassCard } from "@/components/layout/GlassCard";
+import { GlassCard } from "@/components/layout/GlassCard";
+import {
+  DashboardPage,
+  PageHeader,
+  PageSection,
+  cardGridClass,
+  cardBodyClass,
+} from "@/components/layout/DashboardPage";
 import { StatusBadge } from "@/components/layout/StatusBadge";
 import { useSuiShieldStore } from "@/stores/suishield";
 import { formatRelativeTime } from "@/lib/utils";
@@ -29,28 +36,21 @@ export function RpcHealthClient() {
   const activeRpc = rpcEndpoints.find((r) => r.id === activeRpcId);
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6 p-6">
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <div className="text-xs uppercase tracking-[0.18em] text-blue-300">Infrastructure</div>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight">RPC Health</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Endpoint status is simulated. Real checks run server-side via /api/rpc-health.
-          </p>
-        </div>
-        <StatusBadge tone="warning">Simulated Health Data</StatusBadge>
-      </header>
+    <DashboardPage>
+      <PageHeader
+        eyebrow="Infrastructure"
+        title="RPC Health"
+        description="Endpoint status is simulated. Real checks run server-side via /api/rpc-health."
+        badges={<StatusBadge tone="warning">Simulated Health Data</StatusBadge>}
+      />
 
-      {/* Endpoint grid */}
-      <section aria-label="RPC endpoints">
-        <div className="grid gap-4 md:grid-cols-3">
-          {rpcEndpoints.map((rpc, i) => (
-            <MotionGlassCard
+      <PageSection aria-label="RPC endpoints">
+        <div className={`${cardGridClass} md:grid-cols-3`}>
+          {rpcEndpoints.map((rpc) => (
+            <GlassCard
               key={rpc.id}
-              initial={{ opacity: 0, y: 14 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: i * 0.07 }}
-              className={`p-5 ${rpc.id === activeRpcId ? "ring-1 ring-blue-400/30" : ""}`}
+              hover
+              className={`${cardBodyClass} ${rpc.id === activeRpcId ? "ring-1 ring-blue-400/30" : ""}`}
             >
               <div className="flex items-start justify-between">
                 <div>
@@ -100,15 +100,15 @@ export function RpcHealthClient() {
                   />
                 </div>
               </div>
-            </MotionGlassCard>
+            </GlassCard>
           ))}
         </div>
-      </section>
+      </PageSection>
 
-      {/* Latency chart for active RPC */}
       {activeRpc && (
-        <GlassCard className="p-5">
-          <div className="mb-4 flex items-center justify-between">
+        <PageSection delay={0.08}>
+        <GlassCard hover className={cardBodyClass}>
+          <div className="mb-3 flex items-center justify-between">
             <div>
               <div className="text-xs uppercase tracking-wider text-muted-foreground">
                 Active RPC Latency
@@ -147,11 +147,12 @@ export function RpcHealthClient() {
             </ResponsiveContainer>
           </div>
         </GlassCard>
+        </PageSection>
       )}
 
-      {/* Agent recommendation */}
-      <GlassCard className="p-5">
-        <div className="mb-3 text-xs uppercase tracking-wider text-muted-foreground">
+      <PageSection delay={0.12}>
+      <GlassCard hover className={cardBodyClass}>
+        <div className="mb-2.5 text-xs uppercase tracking-wider text-muted-foreground">
           Agent Recommendation
         </div>
         <div className="flex items-start gap-3">
@@ -169,6 +170,7 @@ export function RpcHealthClient() {
           endpoint credentials. Run the demo to see failover in action.
         </div>
       </GlassCard>
-    </div>
+      </PageSection>
+    </DashboardPage>
   );
 }

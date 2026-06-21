@@ -17,18 +17,21 @@ Financial and security decisions are never delegated to an LLM. They are determi
 ```
 Browser (Next.js App Router)
 ├── Landing page           /
+├── Login / Callback       zkLogin (Google OAuth)
 ├── Dashboard shell        (sidebar + topbar + mode banner)
 └── Dashboard pages        /dashboard, /gasless-policy, etc.
     └── Zustand store      Single source of truth for all UI state
 
 Server (Next.js Route Handlers)
-├── /api/rpc-health        Checks RPC endpoints without exposing credentials
-└── /api/sponsor           TODO: Server-side gas sponsoring (secure signing)
+├── /api/sponsor/prepare   Build tx, dry-run, store intent
+├── /api/sponsor/execute   Verify + sponsor sign + submit
+├── /api/zklogin/salt      Per-user salt derivation
+└── /api/rpc-health        RPC health check scaffold
 
 Domain
 ├── Policy engine          Pure function — evaluatePolicy(input) → SponsorshipDecision
 ├── Workflow engine        runWorkflow(scenario, callbacks) → outcome
-└── Sui interfaces         SuiTransactionProvider, SponsorService, RpcHealthService
+└── Sui integration        real-provider.ts (client) + server/sponsor.ts (signing)
 ```
 
 ## Data Flow
@@ -38,13 +41,14 @@ User action (Demo Lab)
   ↓
 runWorkflow() — features/agent/workflow.ts
   ↓ emits callbacks
-Zustand store updates (transactions, agentLogs, incidents, currentMode)
-  ↓ React re-renders
-All dashboard pages reflect new state automatically
+Zustand store updates (transactions, logs, incidents, RPC state)
+  ↓
+Dashboard pages re-render from shared state
 ```
 
-## State Architecture
+Real mint path (Normal Success + zkLogin):
 
-All pages read from `useSuiShieldStore`. Derived metrics (gasUsed, txSuccessRate, blockedDuplicates) are computed from the transaction collection — no contradictory hardcoded numbers.
-
-See `stores/suishield.ts` for the full state interface.
+```
+Demo Lab → mintBadgeReal() → POST /api/sponsor/prepare
+  → zkLogin signTransaction(bytes) → POST /api/sponsor/execute → devnet digest
+```

@@ -1,10 +1,17 @@
 /**
  * Sui integration interfaces.
- * Start with mock implementations — replace with @mysten/sui SDK when ready.
- *
+ * Real implementations in real-provider.ts (client) and lib/sui/server/ (server).
  * All sponsor signing is a server-side operation.
  * Never pass private keys to these interfaces from client code.
  */
+import type { SuiNetwork } from "./network";
+
+/** Discriminated union returned by every real/simulated mint path. */
+export type SponsoredMintResult =
+  | { ok: true; digest: string; network: SuiNetwork; simulated: false }
+  | { ok: false; error: string; moveAbortCode?: number; simulated: false }
+  | { ok: true; digest: string; network: "simulation"; simulated: true }
+  | { ok: false; error: string; simulated: true };
 
 export interface BuildMintBadgeParams {
   wallet: string;
@@ -55,9 +62,9 @@ export interface GasReservation {
 
 export interface SponsorService {
   getBudget(): Promise<BudgetInfo>;
-  /** TODO: Implement server-side signing. Never expose private key to client. */
+  /** Implemented in lib/sui/server/sponsor.ts — server-side only. */
   reserveGas(txBytes: Uint8Array): Promise<GasReservation>;
-  /** TODO: Implement server-side sponsor signature via secure key management. */
+  /** Two-phase mint uses prepare/execute route handlers instead of this direct API. */
   sponsorTransaction(reservationId: string): Promise<{ sponsorSignature: string }>;
 }
 

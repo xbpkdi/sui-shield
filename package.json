@@ -1,7 +1,9 @@
 {
   "name": "suishield",
   "version": "0.1.0",
+  "description": "Application-layer gas sponsorship agent for Sui dApps — Sui Overflow 2026. Live zkLogin + gasless mint, policy engine, agent trace.",
   "private": true,
+  "keywords": ["sui", "gasless", "zklogin", "move", "hackathon", "sui-overflow-2026", "gas-sponsorship"],
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -14,10 +16,14 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
-    "test:e2e:ui": "playwright test --ui"
+    "test:e2e:ui": "playwright test --ui",
+    "diagnose:sponsored-mint": "node scripts/diagnose-mint.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
+    "@mysten/dapp-kit": "^1.1.1",
+    "@mysten/enoki": "^1.1.1",
+    "@mysten/sui": "^2.19.0",
     "@radix-ui/react-accordion": "^1.2.2",
     "@radix-ui/react-alert-dialog": "^1.1.4",
     "@radix-ui/react-avatar": "^1.1.2",

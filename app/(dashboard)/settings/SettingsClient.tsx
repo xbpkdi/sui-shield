@@ -2,141 +2,170 @@
 
 import { AlertTriangle, Info, KeyRound, Network, Bell } from "lucide-react";
 import { GlassCard } from "@/components/layout/GlassCard";
+import {
+  DashboardPage,
+  PageHeader,
+  PageSection,
+  cardBodyClass,
+  listCompactClass,
+} from "@/components/layout/DashboardPage";
 import { StatusBadge } from "@/components/layout/StatusBadge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { APP_VERSION } from "@/lib/constants";
+import { getActiveNetwork, getDefaultRpcUrl, getNetworkLabel } from "@/lib/sui/network";
 
 export function SettingsClient() {
+  const networkLabel = getNetworkLabel(getActiveNetwork());
+  const primaryRpc = getDefaultRpcUrl();
+  const contractConfigured =
+    !!process.env.NEXT_PUBLIC_BADGE_PACKAGE_ID &&
+    !!process.env.NEXT_PUBLIC_STARTER_BADGE_REGISTRY_ID;
+
   return (
-    <div className="mx-auto max-w-3xl space-y-6 p-6">
-      <header>
-        <div className="text-xs uppercase tracking-[0.18em] text-blue-300">Settings</div>
-        <h1 className="mt-1 text-2xl font-semibold tracking-tight">Configuration</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Application settings. Fields marked &quot;UI only&quot; are not connected to a backend in
-          this version.
-        </p>
-      </header>
+    <DashboardPage maxWidth="3xl">
+      <PageHeader
+        eyebrow="Settings"
+        title="Configuration"
+        description="Runtime config is driven by server environment variables. This page shows status — not editable fields."
+      />
 
-      {/* Security notice */}
-      <div className="flex items-start gap-3 rounded-xl border border-amber-500/20 bg-amber-500/8 p-4">
-        <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-400" aria-hidden="true" />
-        <div className="text-sm text-amber-300/90">
-          <strong>Security:</strong> Sponsor private keys are never stored here. All signing is a
-          server-side operation. See{" "}
-          <code className="font-mono text-amber-300">.env.example</code> for environment variable
-          placeholders.
-        </div>
-      </div>
-
-      {/* Sponsor service */}
-      <GlassCard className="p-5">
-        <div className="mb-4 flex items-center gap-2">
-          <KeyRound className="size-4 text-blue-300" aria-hidden="true" />
-          <h2 className="text-sm font-semibold">Sponsor Service</h2>
-          <StatusBadge tone="warning">UI only — backend not connected</StatusBadge>
-        </div>
-        <div className="space-y-4">
-          <div className="space-y-1.5">
-            <Label htmlFor="sponsor-endpoint">Sponsor API endpoint</Label>
-            <Input
-              id="sponsor-endpoint"
-              type="url"
-              placeholder="https://your-sponsor-service/api/sponsor"
-              disabled
-              aria-describedby="sponsor-endpoint-hint"
-            />
-            <p id="sponsor-endpoint-hint" className="text-xs text-muted-foreground">
-              TODO: Implement server-side sponsor signing via a secure key management service.
-            </p>
-          </div>
-          <div className="rounded-lg border border-white/5 bg-black/20 p-3 text-xs text-muted-foreground">
-            <code className="font-mono text-blue-300">SPONSOR_PRIVATE_KEY</code> must be stored in
-            a secrets manager (AWS Secrets Manager, HashiCorp Vault, etc.) — never in environment
-            variables accessible to the browser.
+      <PageSection>
+        <div className="flex items-start gap-3 rounded-xl border border-amber-500/20 bg-amber-500/8 p-4">
+          <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-400" aria-hidden="true" />
+          <div className="text-sm text-amber-300/90">
+            <strong>Security:</strong> Sponsor private keys live only in server env (
+            <code className="font-mono text-amber-300">SUI_SPONSOR_PRIVATE_KEY</code>). Never commit{" "}
+            <code className="font-mono text-amber-300">.env.local</code>. See{" "}
+            <code className="font-mono text-amber-300">.env.example</code> and{" "}
+            <code className="font-mono text-amber-300">SUBMISSION.md</code>.
           </div>
         </div>
-      </GlassCard>
+      </PageSection>
 
-      {/* RPC configuration */}
-      <GlassCard className="p-5">
-        <div className="mb-4 flex items-center gap-2">
-          <Network className="size-4 text-blue-300" aria-hidden="true" />
-          <h2 className="text-sm font-semibold">RPC Configuration</h2>
-          <StatusBadge tone="warning">UI only</StatusBadge>
-        </div>
-        <div className="space-y-4">
-          <div className="space-y-1.5">
-            <Label htmlFor="primary-rpc">Primary RPC URL</Label>
-            <Input
-              id="primary-rpc"
-              type="url"
-              defaultValue="https://fullnode.testnet.sui.io:443"
-              disabled
-            />
+      <PageSection delay={0.05}>
+        <GlassCard hover className={cardBodyClass}>
+          <div className="mb-3 flex flex-wrap items-center gap-2">
+            <KeyRound className="size-4 text-blue-300" aria-hidden="true" />
+            <h2 className="text-sm font-semibold">Sponsor Service</h2>
+            {contractConfigured ? (
+              <StatusBadge tone="success">Live — two-phase API</StatusBadge>
+            ) : (
+              <StatusBadge tone="warning">Contract env not set</StatusBadge>
+            )}
           </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="backup-rpc-1">Backup RPC 1</Label>
-            <Input
-              id="backup-rpc-1"
-              type="url"
-              placeholder="Configure in SUI_RPC_BACKUP_1 env var"
-              disabled
-            />
-          </div>
-        </div>
-      </GlassCard>
-
-      {/* Notifications */}
-      <GlassCard className="p-5">
-        <div className="mb-4 flex items-center gap-2">
-          <Bell className="size-4 text-blue-300" aria-hidden="true" />
-          <h2 className="text-sm font-semibold">Notifications</h2>
-          <StatusBadge tone="warning">UI only</StatusBadge>
-        </div>
-        <div className="space-y-3">
-          {[
-            { id: "notify-incident", label: "Alert on new incidents" },
-            { id: "notify-protective", label: "Alert when entering Protective Mode" },
-            { id: "notify-budget-80", label: "Alert at 80% daily budget" },
-            { id: "notify-rpc", label: "Alert on RPC failover" },
-          ].map((item) => (
-            <div key={item.id} className="flex items-center justify-between rounded-lg border border-white/5 bg-black/15 p-3">
-              <Label htmlFor={item.id} className="font-normal">{item.label}</Label>
-              <Switch id={item.id} disabled aria-label={`Toggle: ${item.label}`} />
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="sponsor-endpoint">Sponsor API endpoints</Label>
+              <Input
+                id="sponsor-endpoint"
+                type="text"
+                defaultValue="/api/sponsor/prepare · /api/sponsor/execute"
+                disabled
+                aria-describedby="sponsor-endpoint-hint"
+              />
+              <p id="sponsor-endpoint-hint" className="text-xs text-muted-foreground">
+                Server builds and dry-runs txs, stores intents, verifies user signatures, then
+                sponsor-signs. Protected by same-origin check and rate limiting in production.
+              </p>
             </div>
-          ))}
-        </div>
-      </GlassCard>
+            <div className="rounded-lg border border-white/5 bg-black/20 p-3 text-xs text-muted-foreground">
+              Configure <code className="font-mono text-blue-300">SUI_SPONSOR_PRIVATE_KEY</code> in{" "}
+              <code className="font-mono">.env.local</code> or your deployment secrets manager.
+            </div>
+          </div>
+        </GlassCard>
+      </PageSection>
 
-      {/* App info */}
-      <GlassCard className="p-5">
-        <div className="mb-3 flex items-center gap-2">
-          <Info className="size-4 text-blue-300" aria-hidden="true" />
-          <h2 className="text-sm font-semibold">About</h2>
-        </div>
-        <dl className="space-y-2 text-sm">
-          <div className="flex justify-between">
-            <dt className="text-muted-foreground">Version</dt>
-            <dd className="font-mono">0.1.0</dd>
+      <PageSection delay={0.1}>
+        <GlassCard hover className={cardBodyClass}>
+          <div className="mb-3 flex flex-wrap items-center gap-2">
+            <Network className="size-4 text-blue-300" aria-hidden="true" />
+            <h2 className="text-sm font-semibold">RPC Configuration</h2>
+            <StatusBadge tone="info">{networkLabel}</StatusBadge>
+            <StatusBadge tone="muted">Env-driven</StatusBadge>
           </div>
-          <div className="flex justify-between">
-            <dt className="text-muted-foreground">Network</dt>
-            <dd>Sui Testnet</dd>
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="primary-rpc">Primary RPC URL</Label>
+              <Input id="primary-rpc" type="url" defaultValue={primaryRpc} disabled />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="backup-rpc-1">Backup RPC 1</Label>
+              <Input
+                id="backup-rpc-1"
+                type="url"
+                placeholder="Configure in SUI_RPC_BACKUP_1 env var"
+                disabled
+              />
+            </div>
           </div>
-          <div className="flex justify-between">
-            <dt className="text-muted-foreground">Architecture</dt>
-            <dd>Next.js App Router · Zustand · Framer Motion</dd>
+        </GlassCard>
+      </PageSection>
+
+      <PageSection delay={0.15}>
+        <GlassCard hover className={cardBodyClass}>
+          <div className="mb-3 flex flex-wrap items-center gap-2">
+            <Bell className="size-4 text-blue-300" aria-hidden="true" />
+            <h2 className="text-sm font-semibold">Notifications</h2>
+            <StatusBadge tone="warning">Roadmap</StatusBadge>
           </div>
-          <div className="flex justify-between">
-            <dt className="text-muted-foreground">Integration status</dt>
-            <dd>
-              <StatusBadge tone="warning">Simulated — Testnet integration pending</StatusBadge>
-            </dd>
+          <div className={listCompactClass}>
+            {[
+              { id: "notify-incident", label: "Alert on new incidents" },
+              { id: "notify-protective", label: "Alert when entering Protective Mode" },
+              { id: "notify-budget-80", label: "Alert at 80% daily budget" },
+              { id: "notify-rpc", label: "Alert on RPC failover" },
+            ].map((item) => (
+              <div
+                key={item.id}
+                className="flex items-center justify-between rounded-lg border border-white/5 bg-black/15 p-3"
+              >
+                <Label htmlFor={item.id} className="font-normal">
+                  {item.label}
+                </Label>
+                <Switch id={item.id} disabled aria-label={`Toggle: ${item.label}`} />
+              </div>
+            ))}
           </div>
-        </dl>
-      </GlassCard>
-    </div>
+        </GlassCard>
+      </PageSection>
+
+      <PageSection delay={0.2}>
+        <GlassCard hover className={cardBodyClass}>
+          <div className="mb-2.5 flex items-center gap-2">
+            <Info className="size-4 text-blue-300" aria-hidden="true" />
+            <h2 className="text-sm font-semibold">About</h2>
+          </div>
+          <dl className="space-y-2 text-sm">
+            <div className="flex justify-between gap-4">
+              <dt className="text-muted-foreground">Version</dt>
+              <dd className="font-mono">{APP_VERSION}</dd>
+            </div>
+            <div className="flex justify-between gap-4">
+              <dt className="text-muted-foreground">Network</dt>
+              <dd>Sui {networkLabel}</dd>
+            </div>
+            <div className="flex justify-between gap-4">
+              <dt className="text-muted-foreground">Hackathon</dt>
+              <dd>Sui Overflow 2026</dd>
+            </div>
+            <div className="flex justify-between gap-4">
+              <dt className="text-muted-foreground">Architecture</dt>
+              <dd className="text-right">Next.js · Zustand · Move · zkLogin</dd>
+            </div>
+            <div className="flex justify-between gap-4">
+              <dt className="text-muted-foreground">Integration</dt>
+              <dd>
+                <StatusBadge tone={contractConfigured ? "success" : "warning"}>
+                  {contractConfigured ? `Live on ${networkLabel}` : "Simulation only"}
+                </StatusBadge>
+              </dd>
+            </div>
+          </dl>
+        </GlassCard>
+      </PageSection>
+    </DashboardPage>
   );
 }

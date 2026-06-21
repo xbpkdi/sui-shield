@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   CheckCircle2,
@@ -17,18 +17,45 @@ import {
   ArrowRight,
   ExternalLink,
   Copy,
+  ChevronDown,
+  Shield,
 } from "lucide-react";
 import { GlassCard } from "@/components/layout/GlassCard";
+import {
+  DashboardPage,
+  PageHeader,
+  PageSection,
+  pageActionClass,
+  cardGridDemoClass,
+  cardBodyClass,
+  cardBodyCompactClass,
+  listCompactClass,
+} from "@/components/layout/DashboardPage";
 import { StatusBadge } from "@/components/layout/StatusBadge";
 import { useSuiShieldStore } from "@/stores/suishield";
-import { runWorkflow, makeBaseSteps, type FlowStep, type WorkflowScenario } from "@/features/agent/workflow";
+import {
+  runWorkflow,
+  makeBaseSteps,
+  makeRealMintSteps,
+  type FlowStep,
+  type WorkflowScenario,
+} from "@/features/agent/workflow";
 import { nowIso } from "@/lib/utils";
+import { explorerTxUrl, isRealDigest } from "@/lib/sui/explorer";
+import { mintBadgeReal, hasClaimedBadgeOnChain, type DryRunInfo } from "@/lib/sui/real-provider";
+import { signPreparedBytesWithZkLogin } from "@/lib/sui/zklogin-signer";
+import { useSuiClient } from "@mysten/dapp-kit";
+import { useZkLogin } from "@/contexts/ZkLoginContext";
+import { getActiveNetwork, getNetworkLabel } from "@/lib/sui/network";
+import { saveAuthNext } from "@/lib/auth/redirect";
+import { useCopyToClipboard } from "@/lib/hooks/useCopyToClipboard";
 
 interface Outcome {
   ok: boolean;
   title: string;
   subtitle: string;
   digest?: string;
+  simulated?: boolean;
 }
 
 interface AgentDecision {
@@ -62,65 +89,95 @@ const scenarios: {
 
 const DECISION_MAP: Record<WorkflowScenario, AgentDecision> = {
   normal: {
-    observed: "Eligible wallet, action whitelisted, no duplicate within window.",
+    observed: "Mint Badge intent. Action whitelisted, budget OK, no duplicate.",
     risk: "Low",
     policy: "Passed",
-    decision: "Sponsor Gas",
-    reason: "All policy checks passed. Simulation succeeded. Budget available.",
+    decision: "Sponsor",
+    reason: "All policy checks passed. Sponsor gas budget sufficient.",
     action: "Gas sponsored via Primary RPC. Transaction submitted.",
     tone: "success",
   },
   duplicate: {
-    observed: "Identical Mint Badge intent from same wallet 8 seconds ago.",
-    risk: "High",
-    policy: "Passed",
-    decision: "Block Sponsorship",
-    reason: "Duplicate intent detected within the 30-second protection window.",
-    action: "Sponsorship blocked. User notified. Gas saved.",
-    tone: "danger",
+    observed: "Repeat intent detected within 60s dedup window.",
+    risk: "Medium",
+    policy: "Denied",
+    decision: "Reject",
+    reason: "Duplicate detected within dedup window.",
+    action: "Intent rejected — sponsor gas protected.",
+    tone: "warning",
   },
   rpc_failure: {
-    observed: "Primary RPC latency degraded to 2.8s — above the 2s threshold.",
+    observed: "Primary RPC latency exceeded threshold (2.8s > 2s).",
     risk: "Medium",
     policy: "Passed",
-    decision: "Failover + Sponsor",
-    reason: "Backup RPC has 420ms latency and a fresher checkpoint.",
-    action: "Switched to Backup RPC. Transaction sponsored and submitted.",
+    decision: "Failover",
+    reason: "Primary endpoint degraded. Backup RPC healthy.",
+    action: "Switched to Backup RPC. Transaction re-submitted successfully.",
     tone: "info",
   },
   unstable: {
-    observed: "Sui checkpoint freshness exceeded safe threshold — 92 seconds since last checkpoint.",
-    risk: "High",
-    policy: "Passed",
-    decision: "Queue Intent · Protective Mode",
-    reason: "Network instability detected. Write actions paused to protect user.",
-    action: "Entered Protective Mode. Intent queued for replay when network recovers.",
-    tone: "warning",
-  },
-  budget_exceeded: {
-    observed: "Daily sponsor budget of 10 SUI would be exceeded by this transaction.",
-    risk: "Medium",
-    policy: "Denied",
-    decision: "Reject Sponsorship",
-    reason: "Manual approval required to release additional budget for today.",
-    action: "Sponsorship rejected. User advised to retry tomorrow or upgrade tier.",
-    tone: "warning",
-  },
-  move_abort: {
-    observed: "Transaction simulation returned MoveAbort code 7 (EBadgeAlreadyMinted).",
+    observed: "Checkpoint freshness lag > 30s. Network instability detected.",
     risk: "High",
     policy: "Denied",
-    decision: "Stop · No Retry",
-    reason: "Deterministic Move error — retrying will fail identically. No retry by policy.",
-    action: "Sponsorship denied. Developer-friendly explanation surfaced to user.",
+    decision: "Protect",
+    reason: "Network state uncertain. Entered Protective Mode.",
+    action: "Intent queued. Will replay when network stabilises.",
     tone: "danger",
   },
+  budget_exceeded: {
+    observed: "Gas budget limit reached for current period.",
+    risk: "High",
+    policy: "Denied",
+    decision: "Reject",
+    reason: "Sponsor budget exhausted for this period.",
+    action: "Intent rejected — no gas spent.",
+    tone: "danger",
+  },
+  move_abort: {
+    observed: "BadgeAlreadyMinted abort (code 7) from Move contract.",
+    risk: "Low",
+    policy: "Passed",
+    decision: "Abort",
+    reason: "Move contract rejected the transaction with abort code 7.",
+    action: "Transaction reverted. Sponsor recovered unspent gas.",
+    tone: "warning",
+  },
 };
+
+function buildDecision(scenario: WorkflowScenario, result: Outcome): AgentDecision {
+  if (result.ok) return DECISION_MAP[scenario];
+
+  const alreadyClaimed =
+    result.subtitle.toLowerCase().includes("already claimed") ||
+    result.subtitle.includes("abort code 7");
+
+  if (alreadyClaimed) {
+    return {
+      observed: "On-chain eligibility check: this wallet already owns a Starter Badge.",
+      risk: "Low",
+      policy: "Denied",
+      decision: "Reject",
+      reason: "The Move contract allows one badge per wallet (BadgeAlreadyMinted / abort 7).",
+      action: "Mint blocked — no sponsor gas spent. Use another Google account or reset is not possible on-chain.",
+      tone: "warning",
+    };
+  }
+
+  return {
+    observed: DECISION_MAP[scenario].observed,
+    risk: "Medium",
+    policy: "Passed",
+    decision: "Failed",
+    reason: result.subtitle,
+    action: "Transaction halted before completion. Expand error details below.",
+    tone: "danger",
+  };
+}
 
 function StepIcon({ status }: { status: FlowStep["status"] }) {
   switch (status) {
     case "running":
-      return <Loader2 className="size-5 animate-spin text-blue-300" aria-hidden="true" />;
+      return <Loader2 className="size-5 animate-spin text-ember-400" aria-hidden="true" />;
     case "done":
       return <CheckCircle2 className="size-5 text-emerald-400" aria-hidden="true" />;
     case "failed":
@@ -142,32 +199,83 @@ function now() {
 
 export function DemoLabClient() {
   const store = useSuiShieldStore();
+  const { session, error: zkLoginError, signIn } = useZkLogin();
+  const suiClient = useSuiClient();
+  const { copied: addressCopied, copy: copyAddress } = useCopyToClipboard();
 
   const [steps, setSteps] = useState<FlowStep[]>(makeBaseSteps());
   const [running, setRunning] = useState(false);
+  const [mintStatus, setMintStatus] = useState<string | null>(null);
+  const [dryRunInfo, setDryRunInfo] = useState<DryRunInfo | null>(null);
   const [outcome, setOutcome] = useState<Outcome | null>(null);
   const [decision, setDecision] = useState<AgentDecision | null>(null);
   const [events, setEvents] = useState<TimelineEvent[]>([]);
   const [activeScenario, setActiveScenario] = useState<WorkflowScenario>("normal");
+  const [errorExpanded, setErrorExpanded] = useState(false);
+  const [alreadyMinted, setAlreadyMinted] = useState(false);
+  const [checkingMinted, setCheckingMinted] = useState(false);
+
+  const sponsorConfigured =
+    !!process.env.NEXT_PUBLIC_BADGE_PACKAGE_ID &&
+    !!process.env.NEXT_PUBLIC_STARTER_BADGE_REGISTRY_ID;
+
+  const canRunReal = !!(session && sponsorConfigured);
+  const networkLabel = getNetworkLabel(getActiveNetwork());
+
+  const effectiveAddress = session
+    ? `${session.address.slice(0, 6)}…${session.address.slice(-4)}`
+    : "0x9a2…ef12";
+
+  useEffect(() => {
+    if (!session || !sponsorConfigured) {
+      setAlreadyMinted(false);
+      return;
+    }
+    let cancelled = false;
+    setCheckingMinted(true);
+    hasClaimedBadgeOnChain(suiClient, session.address)
+      .then((claimed) => {
+        if (!cancelled) setAlreadyMinted(claimed);
+      })
+      .finally(() => {
+        if (!cancelled) setCheckingMinted(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [session, sponsorConfigured, suiClient]);
 
   function addEvent(text: string, tone: TimelineEvent["tone"] = "info") {
     setEvents((e) => [...e, { time: now(), text, tone }]);
   }
 
-  const handleRunScenario = useCallback(
+  const handleMintStatus = useCallback((status: string | null) => {
+    setMintStatus(status);
+  }, []);
+
+  const _executeScenario = useCallback(
     async (scenario: WorkflowScenario) => {
       if (running) return;
       setActiveScenario(scenario);
       setRunning(true);
+      setMintStatus(null);
+      setDryRunInfo(null);
       setOutcome(null);
       setDecision(null);
+      setErrorExpanded(false);
       setEvents([]);
-      setSteps(makeBaseSteps());
 
-      addEvent(`Starting scenario: ${scenarios.find((s) => s.key === scenario)?.label}`, "info");
+      const isRealRun = scenario === "normal" && canRunReal;
+      setSteps(isRealRun ? makeRealMintSteps() : makeBaseSteps());
+
+      addEvent(
+        `Starting scenario: ${scenarios.find((s) => s.key === scenario)?.label}${isRealRun ? ` (Sui ${networkLabel})` : " (Simulation)"}`,
+        "info"
+      );
 
       const result = await runWorkflow(scenario, store, {
         onStepUpdate: setSteps,
+        makeSteps: isRealRun ? makeRealMintSteps : makeBaseSteps,
         onAgentEvent: (event) => store.pushAgentEvent(event),
         onTransactionCreated: (tx) => store.addTransaction(tx),
         onTransactionUpdated: (id, patch) => store.updateTransaction(id, patch),
@@ -201,14 +309,44 @@ export function DemoLabClient() {
           store.queueIntent(id);
           addEvent(`Intent ${id} queued`, "warning");
         },
+        walletName: "Google (zkLogin)",
+        ...(isRealRun && session
+          ? {
+              mintBadgeReal,
+              realMintParams: {
+                wallet: {
+                  address: session.address,
+                  signTransaction: (txBytesBase64: string) =>
+                    signPreparedBytesWithZkLogin(session, txBytesBase64),
+                },
+                suiClient,
+              },
+              onMintStatus: handleMintStatus,
+              onDryRunComplete: (info: DryRunInfo) => setDryRunInfo(info),
+            }
+          : {}),
       });
 
-      setDecision(DECISION_MAP[scenario]);
-      addEvent(result.ok ? "Scenario completed successfully" : "Scenario ended", result.ok ? "success" : "warning");
+      setDecision(buildDecision(scenario, result));
+      addEvent(
+        result.ok ? "Scenario completed successfully" : `Scenario failed: ${result.subtitle}`,
+        result.ok ? "success" : "danger"
+      );
       setOutcome(result);
+      setErrorExpanded(!result.ok);
+      if (!result.ok && result.subtitle.toLowerCase().includes("already claimed")) {
+        setAlreadyMinted(true);
+      }
       setRunning(false);
     },
-    [running, store]
+    [running, store, canRunReal, session, suiClient, handleMintStatus, networkLabel]
+  );
+
+  const handleRunScenario = useCallback(
+    (scenario: WorkflowScenario) => {
+      void _executeScenario(scenario);
+    },
+    [_executeScenario]
   );
 
   function resetDemo() {
@@ -217,118 +355,234 @@ export function DemoLabClient() {
     setOutcome(null);
     setDecision(null);
     setEvents([]);
+    setMintStatus(null);
+    setDryRunInfo(null);
+    setErrorExpanded(false);
     setActiveScenario("normal");
   }
 
   const isProtective = store.currentMode === "protective";
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6 p-6">
-      {/* Header */}
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <div className="text-xs uppercase tracking-[0.18em] text-blue-300">Demo Lab</div>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight">Live Simulation</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Trigger scenarios and watch the agent observe, reason, and act in real time. All
-            activity is labeled <strong>Simulation</strong>.
-          </p>
-        </div>
-        <button
-          onClick={resetDemo}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.03] px-3 py-1.5 text-sm hover:border-white/20 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
-        >
-          <RotateCcw className="size-3.5" aria-hidden="true" />
-          Reset Demo
-        </button>
-      </header>
+    <DashboardPage>
+      <PageHeader
+        eyebrow="Demo Lab"
+        title="Live Simulation"
+        description={
+          <>
+            <span className="hidden sm:inline">
+              {`Trigger scenarios and watch the agent observe, reason, and act in real time. Normal Success runs on Sui ${networkLabel} when zkLogin (Google) is signed in and the contract is deployed.`}
+            </span>
+            <span className="sm:hidden">
+              Run scenarios and watch the agent trace. Normal Success uses Sui {networkLabel} when signed in.
+            </span>
+          </>
+        }
+        actions={
+          <button onClick={resetDemo} className={pageActionClass}>
+            <RotateCcw className="size-3.5" aria-hidden="true" />
+            Reset Demo
+          </button>
+        }
+      />
 
-      {/* Scenario buttons */}
-      <GlassCard className="p-3" aria-label="Scenario selector">
-        <div className="grid grid-cols-2 gap-2 md:grid-cols-3 lg:grid-cols-6">
-          {scenarios.map((s) => (
+      {alreadyMinted && canRunReal && (
+        <PageSection>
+          <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+            <strong>Badge already minted.</strong> This zkLogin wallet (
+            <span className="font-mono">{effectiveAddress}</span>) already owns a Starter Badge on
+            Sui {networkLabel}. Minting again is blocked by the contract — not a UI bug. Sign in
+            with a different Google account to mint again.
+          </div>
+        </PageSection>
+      )}
+
+      {zkLoginError && (
+        <PageSection>
+        <div className="rounded-xl border border-red-500/25 bg-red-500/8 px-4 py-3 text-sm text-red-200">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p>{zkLoginError}</p>
             <button
-              key={s.key}
-              onClick={() => handleRunScenario(s.key)}
-              disabled={running}
-              aria-label={`Run scenario: ${s.label}`}
-              className={`group flex items-center gap-2 rounded-lg border px-3 py-2.5 text-left text-xs transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 disabled:cursor-not-allowed disabled:opacity-50 ${
-                activeScenario === s.key && !running
-                  ? "border-blue-400/40 bg-blue-400/8"
-                  : "border-white/5 bg-black/15 hover:border-white/20"
-              }`}
+              onClick={() => {
+                saveAuthNext("/demo-lab");
+                void signIn();
+              }}
+              className="shrink-0 rounded-lg border border-red-400/30 bg-red-500/10 px-3 py-1.5 text-xs font-medium text-red-100 transition-colors hover:bg-red-500/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
             >
-              <s.icon className="size-3.5 text-blue-300 shrink-0" aria-hidden="true" />
-              <span className="font-medium truncate">{s.label}</span>
+              Sign in with Google
             </button>
-          ))}
+          </div>
+        </div>
+        </PageSection>
+      )}
+
+      {!sponsorConfigured && (
+        <PageSection>
+        <div className="rounded-xl border border-amber-500/20 bg-amber-500/6 px-4 py-3 text-sm text-amber-300">
+          <strong>Demo mode:</strong> Deploy the Move contract and set{" "}
+          <code className="font-mono text-xs">NEXT_PUBLIC_BADGE_PACKAGE_ID</code> +{" "}
+          <code className="font-mono text-xs">NEXT_PUBLIC_STARTER_BADGE_REGISTRY_ID</code> +{" "}
+          <code className="font-mono text-xs">SUI_SPONSOR_PRIVATE_KEY</code> to enable real
+          {networkLabel.toLowerCase()} transactions. All scenarios run as simulations until then.
+        </div>
+        </PageSection>
+      )}
+
+      <PageSection>
+      <GlassCard hover accent="ember" className={cardBodyCompactClass} aria-label="Scenario selector">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6 lg:gap-2.5">
+          {scenarios.map((s) => {
+            const willBeReal = s.key === "normal" && canRunReal;
+            return (
+              <button
+                key={s.key}
+                onClick={() => handleRunScenario(s.key)}
+                disabled={running}
+                aria-label={`Run scenario: ${s.label}${willBeReal ? " (real)" : " (simulation)"}`}
+                className={`group flex flex-col items-start gap-1 rounded-xl border px-2.5 py-2 text-left text-xs transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 disabled:cursor-not-allowed disabled:opacity-50 data-cursor-hover ${
+                  activeScenario === s.key && !running
+                    ? "border-ember-500/40 bg-gradient-to-br from-blue-500/12 to-ember-500/10 shadow-[0_8px_28px_-10px_rgba(255,107,53,0.35)]"
+                    : "border-white/8 bg-white/[0.03] hover:border-blue-400/25 hover:bg-blue-400/5"
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <s.icon className="size-3.5 shrink-0 text-blue-300" aria-hidden="true" />
+                  <span className="truncate font-medium">{s.label}</span>
+                </div>
+                <span className={`text-[10px] ${willBeReal ? "text-emerald-400" : "text-muted-foreground/60"}`}>
+                  {willBeReal ? `Sui ${networkLabel}` : "Simulation"}
+                </span>
+              </button>
+            );
+          })}
         </div>
       </GlassCard>
+      </PageSection>
 
-      <div className="grid gap-4 lg:grid-cols-[1.05fr_1fr]">
-        {/* Demo dApp card */}
-        <GlassCard className="relative overflow-hidden p-6">
-          <div
-            className="absolute -right-16 -top-16 size-56 rounded-full bg-blue-400/10 blur-3xl"
-            aria-hidden="true"
-          />
+      <PageSection delay={0.06}>
+      <div className={cardGridDemoClass}>
+        <GlassCard hover accent="blue" className={`relative overflow-hidden ${cardBodyClass}`}>
+          <div className="pointer-events-none absolute -right-16 -top-16 size-56 rounded-full bg-blue-400/10 blur-3xl" aria-hidden="true" />
           <div className="flex items-start justify-between">
             <div>
               <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
-                Demo Sui dApp · Simulation
+                Demo Sui dApp · {canRunReal ? `Sui ${networkLabel}` : "Simulation"}
               </div>
               <h2 className="mt-1 text-xl font-semibold">Mint Starter Badge Gasless</h2>
             </div>
-            <StatusBadge tone={isProtective ? "danger" : "success"}>
-              {isProtective ? "Paused — Protective Mode" : "Eligible"}
+            <StatusBadge
+              tone={
+                isProtective ? "danger" : alreadyMinted ? "warning" : checkingMinted ? "muted" : "success"
+              }
+            >
+              {isProtective
+                ? "Paused — Protective Mode"
+                : alreadyMinted
+                  ? "Already minted"
+                  : checkingMinted
+                    ? "Checking…"
+                    : "Eligible"}
             </StatusBadge>
           </div>
 
-          {/* Wallet info */}
-          <div className="mt-5 rounded-xl border border-white/10 bg-black/30 p-4">
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-muted-foreground">User wallet</span>
-              <button
-                className="inline-flex items-center gap-1 font-mono text-foreground hover:text-blue-300 transition-colors"
-                onClick={() => navigator.clipboard?.writeText("0x9a2b3c4d5e6f7890abcdef1234567890abcdef12")}
-                aria-label="Copy wallet address"
-              >
-                0x9a2…ef12
-                <Copy className="size-3" />
-              </button>
-            </div>
-            <div className="mt-2 flex items-center justify-between text-xs">
-              <span className="text-muted-foreground">SUI balance</span>
-              <span className="font-mono">0 SUI</span>
-            </div>
-            <div className="mt-1 flex items-center justify-between text-xs">
-              <span className="text-muted-foreground">Gas payment</span>
-              <span className="text-emerald-400">Sponsored by application</span>
-            </div>
+          {/* User info */}
+          <div className="mt-4 rounded-xl border border-white/10 bg-black/30 p-3">
+            {session ? (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">Auth method</span>
+                  <div className="flex items-center gap-1.5">
+                    <Shield className="size-3 text-blue-300" aria-hidden="true" />
+                    <span className="font-medium">Google · zkLogin</span>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">Address</span>
+                  <button
+                    type="button"
+                    className="inline-flex items-center gap-1 font-mono text-foreground transition-colors hover:text-blue-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 rounded"
+                    onClick={() => void copyAddress(session.address)}
+                    aria-label={addressCopied ? "Address copied" : "Copy wallet address"}
+                  >
+                    {addressCopied ? "Copied!" : effectiveAddress}
+                    <Copy className="size-3" />
+                  </button>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">Network</span>
+                  <span className="text-blue-300">{networkLabel}</span>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">Gas payment</span>
+                  <span className="text-emerald-400">Sponsored by application</span>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">User wallet</span>
+                  <span className="font-mono text-muted-foreground">{effectiveAddress} (demo)</span>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">Gas payment</span>
+                  <span className="text-emerald-400">Sponsored by application</span>
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* Primary mint button */}
+          {/* Dry-run info */}
+          <AnimatePresence>
+            {dryRunInfo && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                className="mt-3 overflow-hidden rounded-xl border border-emerald-500/20 bg-emerald-500/6 px-3 py-2.5 text-xs"
+              >
+                <div className="mb-1.5 flex items-center gap-1.5 text-emerald-400">
+                  <CheckCircle2 className="size-3.5" aria-hidden="true" />
+                  <span className="font-medium">Server dry run passed</span>
+                </div>
+                <div className="space-y-0.5 text-muted-foreground">
+                  <div>Sender: <span className="font-mono text-foreground/70">{session?.address.slice(0, 10)}…</span></div>
+                  <div>Gas owner: <span className="font-mono text-foreground/70">{dryRunInfo.sponsorAddress.slice(0, 10)}…</span> <span className="text-emerald-400/70">(sponsor)</span></div>
+                  <div>Gas estimate: <span className="font-mono text-foreground/70">{dryRunInfo.gasEstimateMist.toLocaleString()} MIST</span></div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Mint button */}
           <motion.button
             whileTap={{ scale: 0.98 }}
-            disabled={running || isProtective}
+            disabled={running || isProtective || alreadyMinted}
             onClick={() => handleRunScenario("normal")}
-            className="group mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-blue-400 to-violet-500 px-5 py-3 text-sm font-semibold text-[#050816] shadow-[0_0_28px_-6px_rgba(77,162,255,0.55)] transition-shadow hover:shadow-[0_0_36px_-4px_rgba(77,162,255,0.7)] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+            className="btn-magnetic group mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl gradient-cta px-5 py-3.5 text-sm font-bold text-cinema-navy shadow-[0_0_32px_-6px_rgba(255,107,53,0.5)] transition-shadow hover:shadow-[0_0_40px_-4px_rgba(255,107,53,0.65)] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 data-cursor-hover"
           >
             <Zap className="size-4" aria-hidden="true" />
-            {running ? "Working…" : "Mint Badge Gasless"}
+            {running ? (mintStatus ?? "Working…") : "Mint Badge Gasless"}
             <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
           </motion.button>
           <p className="mt-2 text-center text-xs text-muted-foreground">
-            Gas sponsored by app · Simulation
+            Gas sponsored by app · {canRunReal ? `Sui ${networkLabel}` : "Simulation"}
           </p>
 
           {/* Flow steps */}
-          <div className="mt-6 space-y-2" role="list" aria-label="Transaction flow steps">
+          <div className={`mt-5 ${listCompactClass}`} role="list" aria-label="Transaction flow steps">
             {steps.map((step, i) => (
               <motion.div
                 key={step.id}
                 layout
-                className="flex items-center gap-3 rounded-lg border border-white/5 bg-black/20 px-3 py-2 text-sm"
+                className={`flex items-center gap-2.5 rounded-xl border px-3 py-2 text-sm transition-colors ${
+                  step.status === "running"
+                    ? "border-ember-500/30 bg-ember-500/8 shadow-[0_0_24px_-8px_rgba(255,107,53,0.3)]"
+                    : step.status === "done"
+                      ? "border-emerald-500/15 bg-emerald-500/5"
+                      : step.status === "failed"
+                        ? "border-red-500/25 bg-red-500/8"
+                        : "border-white/5 bg-black/20"
+                }`}
                 role="listitem"
               >
                 {step.status === "pending" ? (
@@ -343,8 +597,8 @@ export function DemoLabClient() {
                     step.status === "skipped"
                       ? "text-muted-foreground/50"
                       : step.status === "failed"
-                        ? "text-red-300"
-                        : "text-foreground/90"
+                      ? "text-red-300"
+                      : "text-foreground/90"
                   }
                 >
                   {step.label}
@@ -361,9 +615,7 @@ export function DemoLabClient() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0 }}
                 className={`mt-5 rounded-xl border p-4 ${
-                  outcome.ok
-                    ? "border-emerald-500/30 bg-emerald-500/8"
-                    : "border-red-500/25 bg-red-500/6"
+                  outcome.ok ? "border-emerald-500/30 bg-emerald-500/8" : "border-red-500/25 bg-red-500/6"
                 }`}
                 role="status"
                 aria-live="polite"
@@ -372,18 +624,58 @@ export function DemoLabClient() {
                   {outcome.ok ? (
                     <CheckCircle2 className="size-4 text-emerald-400" aria-hidden="true" />
                   ) : (
-                    <ShieldAlert className="size-4 text-red-400" aria-hidden="true" />
+                    <AlertTriangle className="size-4 text-red-400" aria-hidden="true" />
                   )}
                   {outcome.title}
                 </div>
-                <div className="mt-1 text-xs text-muted-foreground">{outcome.subtitle}</div>
+
+                {!outcome.ok && (
+                  <div className="mt-2 space-y-2">
+                    <p className="text-sm text-red-200/90">{outcome.subtitle}</p>
+                    {!outcome.simulated && (
+                      <button
+                        onClick={() => setErrorExpanded((e) => !e)}
+                        className="flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+                        aria-expanded={errorExpanded}
+                      >
+                        <ChevronDown
+                          className={`size-3 transition-transform ${errorExpanded ? "rotate-180" : ""}`}
+                          aria-hidden="true"
+                        />
+                        {errorExpanded ? "Hide" : "Show"} technical details
+                      </button>
+                    )}
+                    {errorExpanded && !outcome.simulated && (
+                      <div className="break-words rounded-lg border border-white/5 bg-black/20 px-3 py-2 font-mono text-[11px] text-muted-foreground">
+                        {outcome.subtitle}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {(outcome.ok || outcome.simulated) && (
+                  <div className="mt-1 text-xs text-muted-foreground">{outcome.subtitle}</div>
+                )}
+
                 {outcome.digest && (
                   <div className="mt-3 flex items-center justify-between rounded-lg border border-white/10 bg-black/30 px-3 py-2 font-mono text-[12px]">
                     <span className="text-muted-foreground">Tx digest</span>
-                    <span>{outcome.digest}</span>
-                    <span className="inline-flex items-center gap-1 text-blue-300 opacity-60" aria-label="Explorer link (simulation — not a real transaction)">
-                      Simulation <ExternalLink className="size-3" />
-                    </span>
+                    <span className="max-w-[120px] truncate">{outcome.digest}</span>
+                    {outcome.simulated === false && isRealDigest(outcome.digest) ? (
+                      <a
+                        href={explorerTxUrl(outcome.digest, getActiveNetwork())}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-blue-300 transition-colors hover:text-blue-200"
+                        aria-label="View on Sui Explorer"
+                      >
+                        Explorer <ExternalLink className="size-3" />
+                      </a>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-muted-foreground/60">
+                        Simulation <ExternalLink className="size-3" />
+                      </span>
+                    )}
                   </div>
                 )}
               </motion.div>
@@ -391,8 +683,7 @@ export function DemoLabClient() {
           </AnimatePresence>
         </GlassCard>
 
-        {/* Agent decision panel */}
-        <GlassCard className="p-6" aria-label="Agent decision">
+        <GlassCard hover accent="violet" className={cardBodyClass} aria-label="Agent decision">
           <div className="flex items-center gap-2 text-sm font-semibold">
             <Sparkles className="size-4 text-violet-400" aria-hidden="true" />
             Agent Decision
@@ -404,7 +695,7 @@ export function DemoLabClient() {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0 }}
-                className="mt-4 space-y-3"
+                className={`mt-3 ${listCompactClass}`}
               >
                 <DecisionField label="Observed signal" value={decision.observed} />
                 <div className="flex gap-3">
@@ -418,11 +709,7 @@ export function DemoLabClient() {
                   />
                   <DecisionField
                     label="Policy"
-                    value={
-                      <StatusBadge tone={decision.policy === "Passed" ? "success" : "danger"}>
-                        {decision.policy}
-                      </StatusBadge>
-                    }
+                    value={<StatusBadge tone={decision.policy === "Passed" ? "success" : "danger"}>{decision.policy}</StatusBadge>}
                   />
                 </div>
                 <DecisionField
@@ -441,16 +728,17 @@ export function DemoLabClient() {
           </AnimatePresence>
         </GlassCard>
       </div>
+      </PageSection>
 
-      {/* Event timeline */}
-      <GlassCard className="p-5" aria-label="Live event timeline">
-        <div className="mb-3 text-sm font-semibold">Live Event Timeline</div>
+      <PageSection delay={0.1}>
+      <GlassCard hover className={cardBodyClass} aria-label="Live event timeline">
+        <div className="mb-2.5 text-sm font-semibold">Live Event Timeline</div>
         {events.length === 0 ? (
           <div className="rounded-lg border border-dashed border-white/10 py-6 text-center text-xs text-muted-foreground">
             No events yet — trigger a scenario above.
           </div>
         ) : (
-          <ol className="space-y-2" aria-label="Event timeline">
+          <ol className={listCompactClass} aria-label="Event timeline">
             {events.map((e, i) => (
               <motion.li
                 key={i}
@@ -468,7 +756,8 @@ export function DemoLabClient() {
           </ol>
         )}
       </GlassCard>
-    </div>
+      </PageSection>
+    </DashboardPage>
   );
 }
 

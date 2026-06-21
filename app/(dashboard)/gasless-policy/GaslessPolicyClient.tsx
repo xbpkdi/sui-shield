@@ -1,8 +1,15 @@
 "use client";
 
-import { motion } from "framer-motion";
 import { Plus, X, Info } from "lucide-react";
 import { GlassCard } from "@/components/layout/GlassCard";
+import {
+  DashboardPage,
+  PageHeader,
+  PageSection,
+  cardGridClass,
+  cardBodyClass,
+  listCompactClass,
+} from "@/components/layout/DashboardPage";
 import { StatusBadge } from "@/components/layout/StatusBadge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -28,25 +35,22 @@ export function GaslessPolicyClient() {
   }
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6 p-6">
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <div className="text-xs uppercase tracking-[0.18em] text-blue-300">Policy</div>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight">Gasless Policy</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Policy controls are live — changes immediately affect Demo Lab behavior.
-          </p>
-        </div>
-        <StatusBadge tone="info">
-          <Info className="size-3" aria-hidden="true" />
-          Changes apply instantly
-        </StatusBadge>
-      </header>
+    <DashboardPage maxWidth="4xl">
+      <PageHeader
+        eyebrow="Policy"
+        title="Gasless Policy"
+        description="Policy controls are live — changes immediately affect Demo Lab behavior."
+        badges={
+          <StatusBadge tone="info">
+            <Info className="size-3" aria-hidden="true" />
+            Changes apply instantly
+          </StatusBadge>
+        }
+      />
 
-      {/* Allowed actions */}
-      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0 }}>
-        <GlassCard className="p-5">
-          <h2 className="mb-4 text-sm font-semibold">Allowed Actions</h2>
+      <PageSection>
+        <GlassCard hover className={cardBodyClass}>
+          <h2 className="mb-3 text-sm font-semibold">Allowed Actions</h2>
           <div className="flex flex-wrap gap-2 mb-4">
             {policy.allowedActions.map((action) => (
               <span
@@ -76,20 +80,19 @@ export function GaslessPolicyClient() {
             <button
               onClick={addAction}
               disabled={!newAction.trim()}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.03] px-3 py-1.5 text-sm disabled:opacity-40 hover:border-white/20 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+              className="btn-magnetic inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.03] px-3 py-1.5 text-sm transition-colors hover:border-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 disabled:opacity-40 data-cursor-hover"
             >
               <Plus className="size-3.5" aria-hidden="true" />
               Add
             </button>
           </div>
         </GlassCard>
-      </motion.div>
+      </PageSection>
 
-      {/* Gas + budget */}
-      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
-        <GlassCard className="p-5">
-          <h2 className="mb-4 text-sm font-semibold">Gas &amp; Budget Limits</h2>
-          <div className="grid gap-4 sm:grid-cols-2">
+      <PageSection delay={0.05}>
+        <GlassCard hover className={cardBodyClass}>
+          <h2 className="mb-3 text-sm font-semibold">Gas &amp; Budget Limits</h2>
+          <div className={`${cardGridClass} sm:grid-cols-2`}>
             <div className="space-y-1.5">
               <Label htmlFor="max-gas">Max gas per transaction (SUI)</Label>
               <Input
@@ -143,13 +146,12 @@ export function GaslessPolicyClient() {
             </div>
           </div>
         </GlassCard>
-      </motion.div>
+      </PageSection>
 
-      {/* Protection toggles */}
-      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-        <GlassCard className="p-5">
-          <h2 className="mb-4 text-sm font-semibold">Protection Settings</h2>
-          <div className="space-y-4">
+      <PageSection delay={0.1}>
+        <GlassCard hover className={cardBodyClass}>
+          <h2 className="mb-3 text-sm font-semibold">Protection Settings</h2>
+          <div className={listCompactClass}>
             <div className="flex items-center justify-between rounded-lg border border-white/5 bg-black/15 p-3">
               <div>
                 <Label htmlFor="dup-protection" className="font-medium">Duplicate protection</Label>
@@ -195,7 +197,7 @@ export function GaslessPolicyClient() {
             </div>
           </div>
         </GlassCard>
-      </motion.div>
-    </div>
+      </PageSection>
+    </DashboardPage>
   );
 }

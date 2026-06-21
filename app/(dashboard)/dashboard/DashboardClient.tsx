@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { motion } from "framer-motion";
 import {
   Activity,
@@ -9,10 +10,23 @@ import {
   Zap,
   ShieldAlert,
 } from "lucide-react";
-import { GlassCard, MotionGlassCard } from "@/components/layout/GlassCard";
+import { GlassCard } from "@/components/layout/GlassCard";
+import {
+  DashboardPage,
+  PageHeader,
+  PageSection,
+  cardGridBentoClass,
+  cardGridTwoColClass,
+  cardGridClass,
+  cardBodyClass,
+  cardBodyCompactClass,
+  listCompactClass,
+} from "@/components/layout/DashboardPage";
 import { StatusBadge } from "@/components/layout/StatusBadge";
+import { getActiveNetwork, getNetworkLabel } from "@/lib/sui/network";
 import { CountUp } from "@/components/dashboard/CountUp";
-import { useSuiShieldStore, selectActiveRpc, selectActiveIncidents } from "@/stores/suishield";
+import { useShallow } from "zustand/react/shallow";
+import { useSuiShieldStore, selectActiveRpc } from "@/stores/suishield";
 import { getModeTone, getModeLabel } from "@/components/layout/AppMode";
 import {
   ResponsiveContainer,
@@ -39,12 +53,15 @@ export function DashboardClient() {
   const blockedDuplicates = useSuiShieldStore((s) => s.blockedDuplicates);
   const transactions = useSuiShieldStore((s) => s.transactions);
   const activeRpc = useSuiShieldStore(selectActiveRpc);
-  const activeIncidents = useSuiShieldStore(selectActiveIncidents);
+  const activeIncidents = useSuiShieldStore(
+    useShallow((s) => s.incidents.filter((i) => i.status === "active"))
+  );
 
   const sponsoredCount = transactions.filter((t) => t.status === "confirmed").length;
   const sponsorPct = Math.min(100, (gasUsed / sponsorBudget) * 100);
   const modeTone = getModeTone(currentMode);
   const modeLabel = getModeLabel(currentMode);
+  const networkLabel = getNetworkLabel(getActiveNetwork());
 
   const kpis = [
     {
@@ -53,6 +70,7 @@ export function DashboardClient() {
       hint: `Checkpoint freshness normal`,
       tone: modeTone,
       icon: Activity,
+      accent: "emerald" as const,
     },
     {
       label: "Gasless Sponsorship",
@@ -60,6 +78,7 @@ export function DashboardClient() {
       hint: `${sponsoredCount} txs sponsored`,
       tone: currentMode === "protective" ? ("warning" as const) : ("info" as const),
       icon: ShieldCheck,
+      accent: "blue" as const,
     },
     {
       label: "Sponsor Budget",
@@ -68,6 +87,7 @@ export function DashboardClient() {
       tone: "violet" as const,
       icon: Wallet,
       progress: sponsorPct,
+      accent: "violet" as const,
     },
     {
       label: "Tx Success Rate",
@@ -78,6 +98,7 @@ export function DashboardClient() {
       count: txSuccessRate,
       suffix: "%",
       decimals: 1,
+      accent: "emerald" as const,
     },
     {
       label: "Agent Actions",
@@ -86,6 +107,7 @@ export function DashboardClient() {
       tone: "info" as const,
       icon: Zap,
       count: agentLogs.length,
+      accent: "amber" as const,
     },
     {
       label: "Blocked Duplicates",
@@ -94,36 +116,30 @@ export function DashboardClient() {
       tone: "danger" as const,
       icon: ShieldAlert,
       count: blockedDuplicates,
+      accent: "ember" as const,
     },
   ] as const;
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6 p-6">
-      {/* Header */}
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <div className="text-xs uppercase tracking-[0.18em] text-blue-300">Overview</div>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight">{project.name}</h1>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <StatusBadge tone="info">Testnet</StatusBadge>
-          <StatusBadge tone={modeTone} pulse={currentMode !== "healthy"}>
-            {modeLabel}
-          </StatusBadge>
-        </div>
-      </header>
+    <DashboardPage>
+      <PageHeader
+        eyebrow="Overview"
+        title={project.name}
+        description="Real-time agent metrics, sponsorship budget, and system health at a glance."
+        badges={
+          <>
+            <StatusBadge tone="info">{networkLabel}</StatusBadge>
+            <StatusBadge tone={modeTone} pulse={currentMode !== "healthy"}>
+              {modeLabel}
+            </StatusBadge>
+          </>
+        }
+      />
 
-      {/* KPI grid */}
-      <section aria-label="Key metrics">
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {kpis.map((k, i) => (
-            <MotionGlassCard
-              key={k.label}
-              initial={{ opacity: 0, y: 14 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: i * 0.05 }}
-              className="p-4"
-            >
+      <PageSection aria-label="Key metrics">
+        <div className={cardGridBentoClass}>
+          {kpis.map((k) => (
+            <GlassCard key={k.label} hover accent={k.accent} className={cardBodyCompactClass}>
               <div className="flex items-start justify-between">
                 <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
                   {k.label}
@@ -132,7 +148,7 @@ export function DashboardClient() {
                   <k.icon className="size-4 text-blue-300" aria-hidden="true" />
                 </span>
               </div>
-              <div className="mt-3 flex items-baseline gap-2">
+              <div className="mt-2 flex items-baseline gap-2">
                 <span className="font-mono text-2xl font-semibold tracking-tight">
                   {"count" in k && typeof k.count === "number" ? (
                     <CountUp value={k.count} decimals={"decimals" in k ? k.decimals : 0} suffix={"suffix" in k ? k.suffix : ""} />
@@ -152,15 +168,14 @@ export function DashboardClient() {
                   />
                 </div>
               )}
-            </MotionGlassCard>
+            </GlassCard>
           ))}
         </div>
-      </section>
+      </PageSection>
 
-      {/* Mode + Charts */}
-      <div className="grid gap-4 lg:grid-cols-3">
-        {/* System mode */}
-        <GlassCard className="p-5">
+      <PageSection delay={0.05}>
+        <div className={`${cardGridClass} lg:grid-cols-3`}>
+        <GlassCard hover accent="blue" className={cardBodyClass}>
           <div className="flex items-center justify-between">
             <div className="text-xs uppercase tracking-wider text-muted-foreground">
               Live System Mode
@@ -171,7 +186,7 @@ export function DashboardClient() {
           </div>
           <div className="relative mt-4 grid place-items-center">
             <div
-              className={`relative grid size-32 place-items-center rounded-full border ${
+              className={`relative grid size-24 place-items-center rounded-full border sm:size-32 ${
                 currentMode === "healthy"
                   ? "border-emerald-500/40"
                   : currentMode === "protective"
@@ -206,8 +221,7 @@ export function DashboardClient() {
           </p>
         </GlassCard>
 
-        {/* Gas usage chart */}
-        <GlassCard className="p-5 lg:col-span-2">
+        <GlassCard hover accent="violet" className={`${cardBodyClass} lg:col-span-2`}>
           <div className="flex items-center justify-between">
             <div>
               <div className="text-xs uppercase tracking-wider text-muted-foreground">
@@ -220,7 +234,7 @@ export function DashboardClient() {
             </div>
             <StatusBadge tone="info">Hourly</StatusBadge>
           </div>
-          <div className="mt-4 h-44" aria-label="Gas usage chart">
+          <div className="mt-4 h-36 sm:h-44" aria-label="Gas usage chart">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={gasSeries}>
                 <defs>
@@ -256,13 +270,13 @@ export function DashboardClient() {
             </ResponsiveContainer>
           </div>
         </GlassCard>
-      </div>
+        </div>
+      </PageSection>
 
-      {/* RPC + Incidents + Recent logs */}
-      <div className="grid gap-4 lg:grid-cols-2">
-        {/* Active RPC */}
-        <GlassCard className="p-5">
-          <div className="mb-3 flex items-center justify-between">
+      <PageSection delay={0.1}>
+        <div className={cardGridTwoColClass}>
+        <GlassCard hover className={cardBodyClass}>
+          <div className="mb-2.5 flex items-center justify-between">
             <div className="text-xs uppercase tracking-wider text-muted-foreground">
               Active RPC Endpoint
             </div>
@@ -296,9 +310,8 @@ export function DashboardClient() {
           )}
         </GlassCard>
 
-        {/* Active incidents */}
-        <GlassCard className="p-5">
-          <div className="mb-3 flex items-center justify-between">
+        <GlassCard hover className={cardBodyClass}>
+          <div className="mb-2.5 flex items-center justify-between">
             <div className="text-xs uppercase tracking-wider text-muted-foreground">
               Active Incidents
             </div>
@@ -312,32 +325,51 @@ export function DashboardClient() {
               <p className="text-sm text-muted-foreground">No active incidents</p>
             </div>
           ) : (
-            <ul className="space-y-2" role="list">
+            <ul className={listCompactClass} role="list">
               {activeIncidents.map((inc) => (
-                <li key={inc.id} className="rounded-lg border border-white/5 bg-black/20 p-3">
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <p className="text-sm font-medium">{inc.title}</p>
-                      <p className="text-xs text-muted-foreground">{inc.type}</p>
+                <li key={inc.id}>
+                  <Link
+                    href="/incidents"
+                    className="block rounded-lg border border-white/5 bg-black/20 p-3 transition-colors hover:border-white/10 hover:bg-black/30 data-cursor-hover"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <p className="text-sm font-medium">{inc.title}</p>
+                        <p className="text-xs text-muted-foreground">{inc.type}</p>
+                      </div>
+                      <StatusBadge tone="danger">Active</StatusBadge>
                     </div>
-                    <StatusBadge tone="danger">Active</StatusBadge>
-                  </div>
+                  </Link>
                 </li>
               ))}
             </ul>
           )}
         </GlassCard>
-      </div>
+        </div>
+      </PageSection>
 
-      {/* Recent agent decisions */}
-      <GlassCard className="p-5">
-        <div className="mb-4 flex items-center justify-between">
+      <PageSection delay={0.15}>
+      <GlassCard hover className={cardBodyClass}>
+        <div className="mb-3 flex items-center justify-between">
           <div className="text-xs uppercase tracking-wider text-muted-foreground">
             Recent Agent Decisions
           </div>
           <StatusBadge tone="info">{agentLogs.length} total</StatusBadge>
         </div>
-        <div className="space-y-1.5">
+        {agentLogs.length === 0 ? (
+          <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-white/10 py-8 text-center">
+            <Zap className="mb-2 size-8 text-muted-foreground/30" aria-hidden="true" />
+            <p className="text-sm text-muted-foreground">No agent decisions yet</p>
+            <p className="mt-1 text-xs text-muted-foreground/70">
+              Run a scenario in{" "}
+              <Link href="/demo-lab" className="text-blue-400 transition-colors hover:text-blue-300">
+                Demo Lab
+              </Link>{" "}
+              to populate this feed.
+            </p>
+          </div>
+        ) : (
+        <div className={listCompactClass}>
           {[...agentLogs]
             .reverse()
             .slice(0, 6)
@@ -366,7 +398,9 @@ export function DashboardClient() {
               </div>
             ))}
         </div>
+        )}
       </GlassCard>
-    </div>
+      </PageSection>
+    </DashboardPage>
   );
 }
