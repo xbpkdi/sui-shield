@@ -82,7 +82,7 @@ export function LandingHeader() {
             {session ? (
               <Link
                 href="/dashboard"
-                className="btn-magnetic inline-flex h-8 items-center gap-1.5 rounded-lg border border-subtle bg-surface-muted px-3.5 text-xs font-medium text-foreground transition-colors hover:border-blue-400/25 hover:bg-blue-400/8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 data-cursor-hover"
+                className="btn-magnetic inline-flex h-8 items-center gap-1.5 rounded-lg border border-subtle bg-surface-muted px-3.5 text-xs font-medium text-foreground transition-colors hover:border-blue-400/25 hover:bg-blue-400/8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 data-cursor-hover hidden md:inline-flex"
               >
                 Dashboard
                 <ArrowRight className="size-3.5 text-blue-300/80" aria-hidden="true" />
@@ -90,7 +90,7 @@ export function LandingHeader() {
             ) : (
               <Link
                 href="/login"
-                className="btn-magnetic nav-cta inline-flex h-8 items-center gap-1.5 rounded-lg px-3.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 data-cursor-hover"
+                className="btn-magnetic nav-cta inline-flex h-8 items-center gap-1.5 rounded-lg px-3.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 data-cursor-hover hidden md:inline-flex"
               >
                 Sign in
                 <ArrowRight className="size-3.5" aria-hidden="true" />
