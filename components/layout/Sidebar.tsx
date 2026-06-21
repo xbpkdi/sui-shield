@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { AnimatePresence, motion } from "framer-motion";
 import { LogOut, Github, ExternalLink } from "lucide-react";
 import { navItems } from "@/lib/navigation";
 import { useZkLogin } from "@/contexts/ZkLoginContext";
@@ -174,36 +175,46 @@ export function MobileNav({
 }) {
   const pathname = usePathname();
 
-  if (!open) return null;
-
   return (
-    <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true" aria-label="Navigation menu">
-      <button
-        type="button"
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-        onClick={onClose}
-        aria-label="Close menu"
-      />
-      <aside
-        style={{ width: SIDEBAR_WIDTH }}
-        className="absolute inset-y-0 left-0 flex flex-col border-r border-subtle bg-surface-sidebar backdrop-blur-xl"
-      >
-        <div className="flex items-center justify-between border-b border-subtle px-5 py-4">
-          <AppBrandLink variant="compact" onNavigate={onClose} />
-          <button
+    <AnimatePresence>
+      {open && (
+        <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true" aria-label="Navigation menu">
+          <motion.button
             type="button"
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
             onClick={onClose}
-            className="rounded-lg border border-subtle px-2.5 py-1 text-xs text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+            aria-label="Close menu"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+          />
+          <motion.aside
+            style={{ width: SIDEBAR_WIDTH }}
+            className="absolute inset-y-0 left-0 flex flex-col border-r border-subtle bg-surface-sidebar backdrop-blur-xl"
+            initial={{ x: -SIDEBAR_WIDTH }}
+            animate={{ x: 0 }}
+            exit={{ x: -SIDEBAR_WIDTH }}
+            transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
           >
-            Close
-          </button>
+            <div className="flex items-center justify-between border-b border-subtle px-5 py-4">
+              <AppBrandLink variant="compact" onNavigate={onClose} />
+              <button
+                type="button"
+                onClick={onClose}
+                className="rounded-lg border border-subtle px-2.5 py-1 text-xs text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+              >
+                Close
+              </button>
+            </div>
+            <nav className="flex-1 overflow-y-auto px-3 py-3" aria-label="Mobile navigation">
+              <NavList pathname={pathname} onNavigate={onClose} />
+            </nav>
+            <SidebarUser />
+            <SidebarFooter />
+          </motion.aside>
         </div>
-        <nav className="flex-1 overflow-y-auto px-3 py-3" aria-label="Mobile navigation">
-          <NavList pathname={pathname} onNavigate={onClose} />
-        </nav>
-        <SidebarUser />
-        <SidebarFooter />
-      </aside>
-    </div>
+      )}
+    </AnimatePresence>
   );
 }

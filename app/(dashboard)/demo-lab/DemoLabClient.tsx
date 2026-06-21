@@ -581,9 +581,21 @@ export function DemoLabClient() {
             {running ? (mintStatus ?? "Working…") : "Mint Badge Gasless"}
             <ArrowRight className="size-4 transition-transform duration-100 group-hover:translate-x-0.5" aria-hidden="true" />
           </button>
-          <p className="mt-2 text-center text-xs text-muted-foreground">
-            Gas sponsored by app · {canRunReal ? `Sui ${networkLabel}` : "Simulation"}
-          </p>
+          {isProtective && !running && (
+            <p className="mt-2 text-center text-xs text-amber-400/80">
+              Protective Mode active — run the Recovery scenario to exit, then mint.
+            </p>
+          )}
+          {alreadyMinted && !isProtective && !running && (
+            <p className="mt-2 text-center text-xs text-amber-400/80">
+              Badge already minted with this wallet — sign in with a different Google account to mint again.
+            </p>
+          )}
+          {!isProtective && !alreadyMinted && (
+            <p className="mt-2 text-center text-xs text-muted-foreground">
+              Gas sponsored by app · {canRunReal ? `Sui ${networkLabel}` : "Simulation"}
+            </p>
+          )}
 
           {/* Flow steps */}
           <div className={`mt-6 ${listCompactClass}`} role="list" aria-label="Transaction flow steps">

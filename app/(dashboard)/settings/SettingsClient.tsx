@@ -57,6 +57,7 @@ export function SettingsClient() {
             ) : (
               <StatusBadge tone="warning">Contract env not set</StatusBadge>
             )}
+            <StatusBadge tone="muted">Read-only</StatusBadge>
           </div>
           <div className="space-y-4">
             <div className="space-y-1.5">
@@ -87,12 +88,15 @@ export function SettingsClient() {
             <Network className="size-4 text-blue-300" aria-hidden="true" />
             <h2 className="text-sm font-semibold">RPC Configuration</h2>
             <StatusBadge tone="info">{networkLabel}</StatusBadge>
-            <StatusBadge tone="muted">Env-driven</StatusBadge>
+            <StatusBadge tone="muted">Env-driven · Read-only</StatusBadge>
           </div>
           <div className="space-y-4">
             <div className="space-y-1.5">
               <Label htmlFor="primary-rpc">Primary RPC URL</Label>
-              <Input id="primary-rpc" type="url" defaultValue={primaryRpc} disabled />
+              <Input id="primary-rpc" type="url" defaultValue={primaryRpc} disabled aria-describedby="primary-rpc-hint" />
+              <p id="primary-rpc-hint" className="text-xs text-muted-foreground">
+                Set via <code className="font-mono text-blue-300">NEXT_PUBLIC_SUI_RPC_URL</code> env var.
+              </p>
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="backup-rpc-1">Backup RPC 1</Label>
@@ -101,7 +105,11 @@ export function SettingsClient() {
                 type="url"
                 placeholder="Configure in SUI_RPC_BACKUP_1 env var"
                 disabled
+                aria-describedby="backup-rpc-hint"
               />
+              <p id="backup-rpc-hint" className="text-xs text-muted-foreground">
+                Set via <code className="font-mono text-blue-300">SUI_RPC_BACKUP_1</code> env var.
+              </p>
             </div>
           </div>
         </GlassCard>
