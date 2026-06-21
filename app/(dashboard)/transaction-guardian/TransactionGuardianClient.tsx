@@ -17,6 +17,7 @@ import { formatAddress, formatRelativeTime } from "@/lib/utils";
 import { explorerTxUrl, isRealDigest } from "@/lib/sui/explorer";
 import { getActiveNetwork } from "@/lib/sui/network";
 import type { AgentEvent, TransactionIntent } from "@/types";
+import { HcaiTrustStrip } from "@/components/hcai/HcaiTrustStrip";
 
 function statusTone(s: TransactionIntent["status"]): "success" | "warning" | "danger" | "info" | "muted" {
   switch (s) {
@@ -116,7 +117,7 @@ function TxExpandDetail({
             {relatedLogs.map((log) => (
               <div
                 key={log.id}
-                className="flex gap-2 rounded border border-white/5 bg-black/20 px-2.5 py-1.5 text-xs"
+                className="flex gap-2 rounded border border-subtle bg-surface-muted px-2.5 py-1.5 text-xs"
               >
                 <span className="w-14 shrink-0 font-mono font-semibold text-blue-300">{log.phase}</span>
                 <span className="text-muted-foreground">{log.message}</span>
@@ -246,7 +247,7 @@ function TxRow({ tx }: { tx: TransactionIntent }) {
                 transition={{ duration: 0.2 }}
                 className="overflow-hidden"
               >
-                <div className="border-t border-white/5 bg-black/15 p-3.5">
+                <div className="border-t border-subtle bg-surface-muted p-3.5">
                   <TxExpandDetail tx={tx} relatedLogs={relatedLogs} rpc={rpc} />
                 </div>
               </motion.div>
@@ -269,8 +270,12 @@ export function TransactionGuardianClient() {
       <PageHeader
         eyebrow="Guardian"
         title="Transaction Guardian"
-        description="All transactions from the shared state. Click a row to see the full agent trace."
+        description="Auditable transaction ledger — expand any row for deterministic policy reasons and the full OBSERVE → REASON → ACT → RESULT trace."
       />
+
+      <PageSection>
+        <HcaiTrustStrip compact />
+      </PageSection>
 
       <PageSection delay={0.06}>
       <div className="mb-3 flex flex-wrap gap-2">

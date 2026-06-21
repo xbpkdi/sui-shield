@@ -3,6 +3,7 @@
 import { ExternalLink, Copy, Check } from "lucide-react";
 import { ScrollReveal } from "@/components/effects/ScrollReveal";
 import { StatusBadge } from "@/components/layout/StatusBadge";
+import { GlassCard } from "@/components/layout/GlassCard";
 import { getDeploymentStatus } from "@/lib/deployment";
 import { useCopyToClipboard } from "@/lib/hooks/useCopyToClipboard";
 
@@ -18,14 +19,14 @@ function ProofRow({
   const { copied, copy } = useCopyToClipboard();
 
   return (
-    <div className="rounded-xl border border-white/6 bg-black/25 px-4 py-3">
-      <div className="flex flex-wrap items-center justify-between gap-2">
+    <GlassCard accent="emerald" className="px-4 py-3">
+      <div className="relative z-[2] flex flex-wrap items-center justify-between gap-2">
         <span className="text-xs text-muted-foreground">{label}</span>
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={() => copy(value)}
-            className="rounded-md p-1 text-muted-foreground transition-colors hover:text-foreground"
+            className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-surface-hover hover:text-foreground"
             aria-label={`Copy ${label}`}
           >
             {copied ? <Check className="size-3.5 text-emerald-400" /> : <Copy className="size-3.5" />}
@@ -35,7 +36,7 @@ function ProofRow({
               href={explorerUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="rounded-md p-1 text-blue-300 transition-colors hover:text-blue-200"
+              className="rounded-md p-1 text-blue-300 transition-colors hover:bg-surface-hover hover:text-blue-200"
               aria-label={`View ${label} on Sui Explorer`}
             >
               <ExternalLink className="size-3.5" />
@@ -43,8 +44,8 @@ function ProofRow({
           )}
         </div>
       </div>
-      <p className="mt-1 break-all font-mono text-xs text-foreground/90">{value}</p>
-    </div>
+      <p className="relative z-[2] mt-1 break-all font-mono text-xs text-foreground/90">{value}</p>
+    </GlassCard>
   );
 }
 
@@ -55,7 +56,7 @@ export function OnChainProof() {
 
   return (
     <section
-      className="relative z-10 border-y border-white/5 bg-white/[0.02] py-12"
+      className="relative z-10 border-y border-subtle bg-surface-muted py-12"
       aria-labelledby="onchain-heading"
     >
       <div className="mx-auto max-w-7xl px-4 sm:px-6">

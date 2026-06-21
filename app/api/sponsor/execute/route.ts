@@ -57,6 +57,7 @@ export async function POST(req: Request) {
       isIntentError?: boolean;
       isBytesMismatch?: boolean;
       isSignatureError?: boolean;
+      isDuplicateMint?: boolean;
       moveAbortCode?: number;
     };
 
@@ -69,7 +70,7 @@ export async function POST(req: Request) {
     if (e.isSignatureError) {
       return NextResponse.json({ error: message }, { status: 400 });
     }
-    if (e.moveAbortCode !== undefined) {
+    if (e.moveAbortCode !== undefined || e.isDuplicateMint) {
       return NextResponse.json(
         { error: message, moveAbortCode: e.moveAbortCode, stage: "execution" },
         { status: 422 }
@@ -89,10 +90,7 @@ export async function POST(req: Request) {
       );
     }
 
-    return NextResponse.json(
-      { error: message.includes("rejected transaction") ? message : "Transaction execution failed" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Transaction execution failed" }, { status: 500 });
   }
 }
 

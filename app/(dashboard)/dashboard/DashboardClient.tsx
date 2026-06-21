@@ -25,6 +25,7 @@ import {
 import { StatusBadge } from "@/components/layout/StatusBadge";
 import { getActiveNetwork, getNetworkLabel } from "@/lib/sui/network";
 import { CountUp } from "@/components/dashboard/CountUp";
+import { HcaiTrustStrip } from "@/components/hcai/HcaiTrustStrip";
 import { useShallow } from "zustand/react/shallow";
 import { useSuiShieldStore, selectActiveRpc } from "@/stores/suishield";
 import { getModeTone, getModeLabel } from "@/components/layout/AppMode";
@@ -125,7 +126,7 @@ export function DashboardClient() {
       <PageHeader
         eyebrow="Overview"
         title={project.name}
-        description="Real-time agent metrics, sponsorship budget, and system health at a glance."
+        description="Real-time agent metrics with human-centered transparency — you control policy and signatures; the agent explains every sponsorship decision."
         badges={
           <>
             <StatusBadge tone="info">{networkLabel}</StatusBadge>
@@ -135,6 +136,10 @@ export function DashboardClient() {
           </>
         }
       />
+
+      <PageSection>
+        <HcaiTrustStrip compact />
+      </PageSection>
 
       <PageSection aria-label="Key metrics">
         <div className={cardGridBentoClass}>

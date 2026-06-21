@@ -78,6 +78,14 @@ export async function POST(req: Request) {
       );
     }
 
+    if (err instanceof Error && (err as Error & { isPolicyDenied?: boolean }).isPolicyDenied) {
+      const reasonCode = (err as Error & { reasonCode?: string }).reasonCode;
+      return NextResponse.json(
+        { error: message, reasonCode, stage: "policy" },
+        { status: 403 }
+      );
+    }
+
     console.error("[sponsor/prepare] error:", message);
     return NextResponse.json(
       { error: "Transaction preparation failed" },

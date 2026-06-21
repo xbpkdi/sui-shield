@@ -2,6 +2,7 @@
 
 import { ScrollReveal } from "@/components/effects/ScrollReveal";
 import { StatusBadge } from "@/components/layout/StatusBadge";
+import { GlassCard } from "@/components/layout/GlassCard";
 
 const prepareSnippet = `POST /api/sponsor/prepare
 { "action": "mint_badge", "sender": "0x..." }
@@ -31,24 +32,24 @@ export function IntegrateSection() {
 
       <div className="grid gap-5 lg:grid-cols-2">
         <ScrollReveal delay={0.05}>
-          <div className="rounded-2xl border border-white/10 bg-black/30 p-5 backdrop-blur-md">
-            <div className="mb-3 text-xs font-semibold uppercase tracking-wider text-blue-300">
+          <GlassCard accent="blue" className="p-5">
+            <div className="relative z-[2] mb-3 text-xs font-semibold uppercase tracking-wider text-blue-300">
               Phase 1 — Prepare
             </div>
-            <pre className="overflow-x-auto font-mono text-xs leading-relaxed text-foreground/85">
+            <pre className="relative z-[2] overflow-x-auto font-mono text-xs leading-relaxed text-foreground/85">
               {prepareSnippet}
             </pre>
-          </div>
+          </GlassCard>
         </ScrollReveal>
         <ScrollReveal delay={0.1}>
-          <div className="rounded-2xl border border-white/10 bg-black/30 p-5 backdrop-blur-md">
-            <div className="mb-3 text-xs font-semibold uppercase tracking-wider text-ember-300">
+          <GlassCard accent="ember" className="p-5">
+            <div className="relative z-[2] mb-3 text-xs font-semibold uppercase tracking-wider text-ember-300">
               Phase 2 — Execute
             </div>
-            <pre className="overflow-x-auto font-mono text-xs leading-relaxed text-foreground/85">
+            <pre className="relative z-[2] overflow-x-auto font-mono text-xs leading-relaxed text-foreground/85">
               {executeSnippet}
             </pre>
-          </div>
+          </GlassCard>
         </ScrollReveal>
       </div>
     </section>

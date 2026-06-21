@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ArrowRight, CheckCircle2, Play, ExternalLink } from "lucide-react";
 import { ScrollReveal } from "@/components/effects/ScrollReveal";
 import { StatusBadge } from "@/components/layout/StatusBadge";
+import { GlassCard } from "@/components/layout/GlassCard";
 import { getDeploymentStatus } from "@/lib/deployment";
 import { GITHUB_URL, LIVE_DEMO_URL } from "@/lib/constants";
 
@@ -38,6 +39,9 @@ const judgeSteps = [
   },
 ] as const;
 
+const secondaryBtnClass =
+  "inline-flex w-full items-center justify-center gap-2 rounded-xl border border-subtle bg-surface-muted px-6 py-3 text-sm font-medium text-foreground transition-colors hover:border-blue-400/25 hover:bg-surface-hover sm:w-auto";
+
 export function JudgeGuide() {
   const status = getDeploymentStatus();
 
@@ -58,40 +62,44 @@ export function JudgeGuide() {
           Built for judges — click, mint, verify
         </h2>
         <p className="mx-auto mt-4 max-w-2xl text-muted-foreground">
-          Real two-phase gas sponsorship: server dry-runs and stores intent, you sign exact bytes,
-          sponsor co-signs, badge lands on-chain. Use a fresh Google account if you already minted.
+          Human-centered AI UX: deterministic policy, full reasoning trace, you sign exact bytes before
+          sponsor co-signs. Use a fresh Google account if you already minted.
         </p>
       </ScrollReveal>
 
       <ol className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" role="list">
         {judgeSteps.map((item, i) => (
           <ScrollReveal key={item.step} delay={i * 0.05}>
-            <li className="flex h-full flex-col rounded-2xl border border-white/10 bg-white/[0.04] p-5 backdrop-blur-md">
-              <div className="mb-3 flex items-center gap-2">
-                <span className="grid size-7 place-items-center rounded-lg bg-blue-500/15 font-mono text-xs font-semibold text-blue-300">
-                  {item.step}
-                </span>
-                <CheckCircle2 className="size-4 text-emerald-400/80" aria-hidden="true" />
-              </div>
-              <h3 className="font-display text-sm font-semibold">{item.title}</h3>
-              <p className="mt-2 flex-1 text-sm leading-relaxed text-muted-foreground">{item.desc}</p>
-              <Link
-                href={item.href}
-                className="mt-4 inline-flex items-center gap-1.5 text-xs font-medium text-blue-300 transition-colors hover:text-blue-200"
-              >
-                {item.cta}
-                <ArrowRight className="size-3.5" aria-hidden="true" />
-              </Link>
+            <li className="h-full">
+              <GlassCard hover accent="blue" className="flex h-full flex-col p-5">
+                <div className="relative z-[2] mb-3 flex items-center gap-2">
+                  <span className="grid size-7 place-items-center rounded-lg border border-blue-400/20 bg-blue-400/10 font-mono text-xs font-semibold text-blue-300">
+                    {item.step}
+                  </span>
+                  <CheckCircle2 className="size-4 text-emerald-400" aria-hidden="true" />
+                </div>
+                <h3 className="relative z-[2] font-display text-sm font-semibold">{item.title}</h3>
+                <p className="relative z-[2] mt-2 flex-1 text-sm leading-relaxed text-muted-foreground">
+                  {item.desc}
+                </p>
+                <Link
+                  href={item.href}
+                  className="relative z-[2] mt-4 inline-flex items-center gap-1.5 text-xs font-medium text-blue-300 transition-colors hover:text-blue-200"
+                >
+                  {item.cta}
+                  <ArrowRight className="size-3.5" aria-hidden="true" />
+                </Link>
+              </GlassCard>
             </li>
           </ScrollReveal>
         ))}
       </ol>
 
       <ScrollReveal delay={0.2} className="mt-8">
-        <div className="flex flex-col items-center justify-center gap-4 rounded-2xl border border-white/8 bg-white/[0.03] p-6 sm:flex-row">
+        <GlassCard accent="none" className="flex flex-col items-center justify-center gap-4 p-6 sm:flex-row">
           <Link
             href="/demo-lab"
-            className="btn-magnetic inline-flex w-full items-center justify-center gap-2 rounded-xl gradient-cta px-6 py-3 text-sm font-semibold text-cinema-navy sm:w-auto"
+            className="btn-magnetic relative z-[2] inline-flex w-full items-center justify-center gap-2 rounded-xl gradient-cta px-6 py-3 text-sm font-semibold text-cinema-navy shadow-[0_0_32px_-6px_rgba(77,162,255,0.35)] sm:w-auto"
           >
             <Play className="size-4" aria-hidden="true" />
             Start 3-minute demo
@@ -101,22 +109,17 @@ export function JudgeGuide() {
               href={`${LIVE_DEMO_URL}/api/status`}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-500/25 bg-emerald-500/10 px-6 py-3 text-sm font-medium text-emerald-200 transition-colors hover:border-emerald-400/35 sm:w-auto"
+              className="relative z-[2] inline-flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-6 py-3 text-sm font-medium text-emerald-400 transition-colors hover:border-emerald-400/40 hover:bg-emerald-500/15 sm:w-auto"
             >
               Live status API
               <ExternalLink className="size-3.5" aria-hidden="true" />
             </a>
           )}
-          <a
-            href={GITHUB_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-6 py-3 text-sm font-medium transition-colors hover:border-white/20 sm:w-auto"
-          >
+          <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer" className={`relative z-[2] ${secondaryBtnClass}`}>
             View source
             <ExternalLink className="size-3.5" aria-hidden="true" />
           </a>
-        </div>
+        </GlassCard>
       </ScrollReveal>
     </section>
   );

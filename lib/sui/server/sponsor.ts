@@ -12,7 +12,9 @@ import { toZkLoginPublicIdentifier } from "@mysten/sui/zklogin";
 import { fromBase64, toBase64 } from "@mysten/bcs";
 import { z } from "zod";
 import { createIntent, consumeIntent, INTENT_TTL_MS } from "./intent-store";
+import { assertSponsorPolicyAllowed, recordSponsorGasUsed } from "./sponsor-policy";
 import { getActiveNetwork } from "../network";
+import { BADGE_ACTION } from "@/lib/constants";
 
 // ─── Allowlist ────────────────────────────────────────────────────────────────
 
@@ -280,6 +282,12 @@ export async function prepareMintIntent(
     throw Object.assign(new Error(err), { moveAbortCode: code, isDryRun: true });
   }
 
+  assertSponsorPolicyAllowed({
+    wallet: req.sender,
+    action: BADGE_ACTION,
+    gasEstimateMist,
+  });
+
   // Log decoded tx fields to prove gas owner = sponsor.
   const decoded = decodePreparedTx(txBytesBase64);
   console.log(
@@ -345,6 +353,14 @@ export async function executeSponsoredMint(
 
   const client = makeSuiClient();
 
+  const alreadyClaimed = await checkHasBadgeOnChain(storedIntent.sender);
+  if (alreadyClaimed) {
+    throw Object.assign(
+      new Error("Wallet has already claimed a Starter Badge"),
+      { moveAbortCode: 7, isDuplicateMint: true }
+    );
+  }
+
   // ── User signature verification ───────────────────────────────────────────
   try {
     await resolveUserSignerAddress(
@@ -395,6 +411,11 @@ export async function executeSponsoredMint(
   }
 
   console.log(`[sponsor/execute] confirmed: digest=${result.digest}`);
+
+  recordSponsorGasUsed(
+    storedIntent.sender,
+    Number(result.effects?.gasUsed?.computationCost ?? 0)
+  );
 
   const explorerBase =
     process.env.NEXT_PUBLIC_SUI_EXPLORER_BASE_URL ?? "https://suiexplorer.com";

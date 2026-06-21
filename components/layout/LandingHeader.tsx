@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 
 const navLinks = [
   { href: "#for-judges", label: "For judges" },
+  { href: "#hcai", label: "HCAI" },
   { href: "#features", label: "Features" },
   { href: "#how-it-works", label: "How it works" },
   { href: "/demo-lab", label: "Demo Lab", isRoute: true, accent: true },

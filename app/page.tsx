@@ -16,6 +16,7 @@ import { LandingHero } from "@/components/landing/LandingHero";
 import { JudgeGuide } from "@/components/landing/JudgeGuide";
 import { OnChainProof } from "@/components/landing/OnChainProof";
 import { IntegrateSection } from "@/components/landing/IntegrateSection";
+import { HcaiSection } from "@/components/landing/HcaiSection";
 import { PostAuthRedirect } from "@/components/auth/PostAuthRedirect";
 import { Marquee } from "@/components/effects/Marquee";
 import { ScrollReveal } from "@/components/effects/ScrollReveal";
@@ -115,7 +116,7 @@ export default function LandingPage() {
       <OnChainProof />
 
       {/* Tech stack marquee */}
-      <section className="relative z-10 border-y border-white/5 py-6" aria-label="Tech stack">
+      <section className="relative z-10 border-y border-subtle py-6" aria-label="Tech stack">
         <Marquee items={stackItems} />
       </section>
 
@@ -174,7 +175,7 @@ export default function LandingPage() {
           <div className="flex flex-wrap items-center justify-center gap-3">
             {agentFlow.map((phase, i) => (
               <div key={phase} className="flex items-center gap-3">
-                <div className="rounded-xl border border-white/10 bg-white/[0.04] px-6 py-3.5 text-center backdrop-blur-sm transition-colors hover:border-ember-500/30">
+                <div className="rounded-xl border border-subtle bg-surface-muted px-6 py-3.5 text-center backdrop-blur-sm transition-colors hover:border-ember-400/30 hover:bg-surface-hover">
                   <div className="font-mono text-xs font-semibold text-blue-300">{phase}</div>
                 </div>
                 {i < agentFlow.length - 1 && (
@@ -186,7 +187,7 @@ export default function LandingPage() {
         </ScrollReveal>
 
         <ScrollReveal delay={0.15} className="mt-12">
-          <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-8 backdrop-blur-md">
+          <div className="rounded-2xl border border-subtle bg-surface-card p-8 backdrop-blur-md">
             <p className="mb-5 font-display text-sm font-medium">Example: RPC failover</p>
             <div className="space-y-3 text-sm">
               {[
@@ -207,10 +208,12 @@ export default function LandingPage() {
         </ScrollReveal>
       </section>
 
+      <HcaiSection />
+
       <IntegrateSection />
 
       {/* Reverse marquee */}
-      <section className="relative z-10 border-y border-white/5 py-5" aria-hidden="true">
+      <section className="relative z-10 border-y border-subtle py-5" aria-hidden="true">
         <Marquee
           items={["Gasless", "zkLogin", "Sponsored TX", "Protective Mode", "Agent Logs", "Demo Lab"]}
           reverse
@@ -221,7 +224,7 @@ export default function LandingPage() {
       {/* CTA */}
       <section className="relative z-10 mx-auto max-w-7xl px-4 py-16 text-center sm:px-6 sm:py-24">
         <ScrollReveal>
-          <div className="overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-blue-500/8 via-violet-500/4 to-ember-500/6 p-6 shadow-[0_0_60px_-24px_rgba(77,162,255,0.15)] backdrop-blur-md sm:rounded-3xl sm:p-12">
+          <div className="overflow-hidden rounded-2xl border border-subtle bg-surface-card bg-gradient-to-br from-blue-400/8 via-surface-card to-ember-500/6 p-6 shadow-[0_0_60px_-24px_rgba(77,162,255,0.15)] backdrop-blur-md sm:rounded-3xl sm:p-12">
             <h2 className="font-display text-3xl font-bold tracking-tight md:text-4xl">
               Try it in the Demo Lab
             </h2>
@@ -238,7 +241,7 @@ export default function LandingPage() {
               </Link>
               <Link
                 href="/dashboard"
-                className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-8 py-3.5 text-sm font-medium transition-colors hover:border-white/20 sm:w-auto"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-subtle bg-surface-muted px-8 py-3.5 text-sm font-medium transition-colors hover:border-blue-400/25 hover:bg-surface-hover sm:w-auto"
               >
                 Explore Dashboard
               </Link>

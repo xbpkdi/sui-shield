@@ -5,6 +5,7 @@
  */
 
 import type { RpcHealthService, RpcHealthResult } from "@/lib/sui/interfaces";
+import { redactRpcUrl } from "@/lib/rpc/redact-url";
 import { realRpcHealthService } from "@/lib/rpc/real-health-service";
 
 export type { RpcHealthResult };
@@ -23,7 +24,7 @@ export const mockRpcHealthService: RpcHealthService = {
       {
         id: "rpc-1",
         name: "Mysten Public RPC",
-        url: "https://fullnode.testnet.sui.io:443",
+        url: redactRpcUrl("https://fullnode.testnet.sui.io:443"),
         role: "primary",
         status: "healthy",
         latencyMs: 380 + jitter(),
@@ -34,7 +35,7 @@ export const mockRpcHealthService: RpcHealthService = {
       {
         id: "rpc-2",
         name: "QuickNode RPC",
-        url: "https://sui-testnet.example.com",
+        url: redactRpcUrl("https://sui-testnet.example.com"),
         role: "backup",
         status: "healthy",
         latencyMs: 420 + jitter(),
@@ -45,7 +46,7 @@ export const mockRpcHealthService: RpcHealthService = {
       {
         id: "rpc-3",
         name: "Chainstack RPC",
-        url: "https://sui-testnet-2.example.com",
+        url: redactRpcUrl("https://sui-testnet-2.example.com"),
         role: "standby",
         status: "healthy" as const,
         latencyMs: 510 + jitter(),

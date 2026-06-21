@@ -1,4 +1,5 @@
 import type { RpcHealthResult, RpcHealthService } from "@/lib/sui/interfaces";
+import { redactRpcUrl } from "@/lib/rpc/redact-url";
 import { getActiveNetwork, getDefaultRpcUrl } from "@/lib/sui/network";
 
 const RPC_TIMEOUT_MS = 5000;
@@ -88,7 +89,7 @@ export const realRpcHealthService: RpcHealthService = {
         return {
           id: cfg.id,
           name: cfg.name,
-          url: cfg.url,
+          url: redactRpcUrl(cfg.url),
           role: cfg.role,
           status: ping.status,
           latencyMs: ping.latencyMs,

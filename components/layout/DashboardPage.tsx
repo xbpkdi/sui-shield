@@ -89,11 +89,11 @@ export function PageSection({
 
 /** Primary dashboard action button */
 export const pageActionClass =
-  "btn-magnetic inline-flex items-center gap-1.5 rounded-lg border border-white/12 bg-white/[0.05] px-3.5 py-2 text-sm font-medium transition-colors hover:border-blue-400/30 hover:bg-blue-400/8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 data-cursor-hover";
+  "btn-magnetic inline-flex items-center gap-1.5 rounded-lg border border-subtle bg-surface-muted px-3.5 py-2 text-sm font-medium transition-colors hover:border-blue-400/30 hover:bg-blue-400/8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 data-cursor-hover";
 
 /** Disabled / coming-soon control — clearly not interactive */
 export const pageDisabledClass =
-  "inline-flex cursor-not-allowed items-center gap-1.5 rounded-lg border border-white/8 bg-white/[0.02] px-3.5 py-2 text-sm text-muted-foreground opacity-70";
+  "inline-flex cursor-not-allowed items-center gap-1.5 rounded-lg border border-subtle bg-surface-muted px-3.5 py-2 text-sm text-muted-foreground opacity-70";
 
 /** Standard gap between sibling cards */
 export const cardGridClass = "grid gap-6";

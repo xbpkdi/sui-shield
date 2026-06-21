@@ -1,11 +1,15 @@
 import { NextResponse } from "next/server";
+import { guardPublicApi } from "@/lib/api/api-guard";
 import { getRpcHealthService } from "@/lib/rpc/health-service";
 
 /**
  * Server-side RPC health check endpoint.
  * Runs behind an API route so private RPC credentials never reach the browser.
  */
-export async function GET() {
+export async function GET(req: Request) {
+  const blocked = guardPublicApi(req, { maxPerMin: 60, bucketKey: "rpc-health" });
+  if (blocked) return blocked;
+
   try {
     const results = await getRpcHealthService().checkAll();
     return NextResponse.json({ ok: true, endpoints: results, checkedAt: new Date().toISOString() });

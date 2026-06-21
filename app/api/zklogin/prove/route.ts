@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { guardPublicApi } from "@/lib/api/api-guard";
 import { fetchZkLoginProof } from "@/lib/zklogin/services";
 
 export const runtime = "nodejs";
@@ -14,6 +15,9 @@ const ProveRequestSchema = z.object({
 });
 
 export async function POST(req: Request) {
+  const blocked = guardPublicApi(req, { maxPerMin: 15, bucketKey: "zklogin-prove" });
+  if (blocked) return blocked;
+
   let body: unknown;
   try {
     body = await req.json();

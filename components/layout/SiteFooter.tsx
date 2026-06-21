@@ -10,7 +10,7 @@ export function SiteFooter({ className, compact = false }: SiteFooterProps) {
   return (
     <footer
       className={cn(
-        "relative z-10 border-t border-white/5 px-4 sm:px-6",
+        "relative z-10 border-t border-subtle px-4 sm:px-6",
         compact ? "py-6" : "py-10",
         className
       )}
@@ -26,7 +26,7 @@ export function SiteFooter({ className, compact = false }: SiteFooterProps) {
           href={GITHUB_URL}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 rounded-lg border border-white/8 bg-white/[0.03] px-3 py-1.5 transition-colors hover:border-white/15 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 data-cursor-hover"
+          className="inline-flex items-center gap-2 rounded-lg border border-subtle bg-surface-muted px-3 py-1.5 transition-colors hover:border-blue-400/25 hover:bg-surface-hover hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 data-cursor-hover"
         >
           github.com/{GITHUB_HANDLE}
         </a>

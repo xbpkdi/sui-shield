@@ -15,7 +15,7 @@ const toneStyles: Record<Tone, string> = {
   danger: "border-red-500/30 bg-red-500/10 text-red-400",
   info: "border-blue-400/30 bg-blue-400/10 text-blue-300",
   violet: "border-violet-500/30 bg-violet-500/10 text-violet-400",
-  muted: "border-white/10 bg-white/[0.04] text-muted-foreground",
+  muted: "border-subtle bg-surface-muted text-muted-foreground",
 };
 
 const pulseDotStyles: Record<Tone, string> = {

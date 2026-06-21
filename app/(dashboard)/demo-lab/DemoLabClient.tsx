@@ -12,7 +12,7 @@ import {
   RotateCcw,
   Loader2,
   AlertTriangle,
-  Sparkles,
+  ClipboardList,
   Zap,
   ArrowRight,
   ExternalLink,
@@ -49,6 +49,10 @@ import { useZkLogin } from "@/contexts/ZkLoginContext";
 import { getActiveNetwork, getNetworkLabel } from "@/lib/sui/network";
 import { saveAuthNext } from "@/lib/auth/redirect";
 import { useCopyToClipboard } from "@/lib/hooks/useCopyToClipboard";
+import { HcaiTrustStrip } from "@/components/hcai/HcaiTrustStrip";
+import { HumanControlPanel } from "@/components/hcai/HumanControlPanel";
+import { CapabilityLabel, type CapabilityMode } from "@/components/hcai/CapabilityLabel";
+import { HCAI_TAGLINE } from "@/lib/hcai/principles";
 
 interface Outcome {
   ok: boolean;
@@ -362,6 +366,11 @@ export function DemoLabClient() {
   }
 
   const isProtective = store.currentMode === "protective";
+  const capabilityMode: CapabilityMode = isProtective
+    ? "paused"
+    : canRunReal
+      ? "live"
+      : "simulation";
 
   return (
     <DashboardPage>
@@ -371,13 +380,14 @@ export function DemoLabClient() {
         description={
           <>
             <span className="hidden sm:inline">
-              {`Trigger scenarios and watch the agent observe, reason, and act in real time. Normal Success runs on Sui ${networkLabel} when zkLogin (Google) is signed in and the contract is deployed.`}
+              {`Human-centered agent demo — transparent reasoning, you sign every tx. Normal Success runs on Sui ${networkLabel} when zkLogin is signed in and the contract is deployed.`}
             </span>
             <span className="sm:hidden">
-              Run scenarios and watch the agent trace. Normal Success uses Sui {networkLabel} when signed in.
+              Transparent agent trace on Sui {networkLabel}. You sign; sponsor co-signs after policy checks.
             </span>
           </>
         }
+        badges={<CapabilityLabel mode={capabilityMode} />}
         actions={
           <button onClick={resetDemo} className={pageActionClass}>
             <RotateCcw className="size-3.5" aria-hidden="true" />
@@ -385,6 +395,10 @@ export function DemoLabClient() {
           </button>
         }
       />
+
+      <PageSection>
+        <HcaiTrustStrip />
+      </PageSection>
 
       {alreadyMinted && canRunReal && (
         <PageSection>
@@ -429,6 +443,10 @@ export function DemoLabClient() {
       )}
 
       <PageSection>
+        <HumanControlPanel />
+      </PageSection>
+
+      <PageSection>
       <GlassCard hover accent="ember" className={cardBodyCompactClass} aria-label="Scenario selector">
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-6 xl:gap-4">
           {scenarios.map((s) => {
@@ -442,7 +460,7 @@ export function DemoLabClient() {
                 className={`group flex min-h-[4.5rem] flex-col items-start justify-between gap-1.5 rounded-xl border px-3 py-3 text-left text-xs transition-[border-color,background-color,box-shadow,color] duration-100 ease-out active:scale-[0.99] active:duration-75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 disabled:cursor-not-allowed disabled:opacity-50 data-cursor-hover ${
                   activeScenario === s.key && !running
                     ? "border-ember-500/40 bg-gradient-to-br from-blue-500/12 to-ember-500/10 shadow-[0_8px_28px_-10px_rgba(255,107,53,0.35)]"
-                    : "border-white/8 bg-white/[0.03] hover:border-blue-400/25 hover:bg-blue-400/5"
+                    : "border-subtle bg-surface-muted hover:border-blue-400/25 hover:bg-blue-400/5"
                 }`}
               >
                 <div className="flex items-center gap-2">
@@ -485,7 +503,7 @@ export function DemoLabClient() {
           </div>
 
           {/* User info */}
-          <div className="mt-5 rounded-xl border border-white/[0.06] bg-[#060a12]/70 p-4">
+          <div className="mt-5 rounded-xl border border-subtle bg-surface-muted p-4">
             {session ? (
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-xs">
@@ -580,12 +598,12 @@ export function DemoLabClient() {
                       ? "border-emerald-500/15 bg-emerald-500/5"
                       : step.status === "failed"
                         ? "border-red-500/25 bg-red-500/8"
-                        : "border-white/5 bg-black/20"
+                        : "border-subtle bg-surface-muted"
                 }`}
                 role="listitem"
               >
                 {step.status === "pending" ? (
-                  <span className="grid size-5 place-items-center rounded-full border border-white/15 text-[10px] text-muted-foreground" aria-hidden="true">
+                  <span className="grid size-5 place-items-center rounded-full border border-subtle text-[10px] text-muted-foreground" aria-hidden="true">
                     {i + 1}
                   </span>
                 ) : (
@@ -645,7 +663,7 @@ export function DemoLabClient() {
                       </button>
                     )}
                     {errorExpanded && !outcome.simulated && (
-                      <div className="break-words rounded-lg border border-white/5 bg-black/20 px-3 py-2 font-mono text-[11px] text-muted-foreground">
+                      <div className="break-words rounded-lg border border-subtle bg-surface-muted px-3 py-2 font-mono text-[11px] text-muted-foreground">
                         {outcome.subtitle}
                       </div>
                     )}
@@ -657,7 +675,7 @@ export function DemoLabClient() {
                 )}
 
                 {outcome.digest && (
-                  <div className="mt-3 flex items-center justify-between rounded-lg border border-white/10 bg-black/30 px-3 py-2 font-mono text-[12px]">
+                  <div className="mt-3 flex items-center justify-between rounded-lg border border-subtle bg-surface-muted px-3 py-2 font-mono text-[12px]">
                     <span className="text-muted-foreground">Tx digest</span>
                     <span className="max-w-[120px] truncate">{outcome.digest}</span>
                     {outcome.simulated === false && isRealDigest(outcome.digest) ? (
@@ -682,11 +700,15 @@ export function DemoLabClient() {
           </AnimatePresence>
         </GlassCard>
 
-        <GlassCard hover accent="none" className={cardBodyClass} aria-label="Agent decision">
-          <div className="flex items-center gap-2 text-sm font-semibold">
-            <Sparkles className="size-4 text-violet-400" aria-hidden="true" />
-            Agent Decision
+        <GlassCard hover accent="violet" className={cardBodyClass} aria-label="Agent decision">
+          <div className="relative z-[2] flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2 text-sm font-semibold">
+              <ClipboardList className="size-4 text-violet-300" aria-hidden="true" />
+              Explainable decision
+            </div>
+            <StatusBadge tone="violet">Deterministic</StatusBadge>
           </div>
+          <p className="relative z-[2] mt-1 text-xs text-muted-foreground">{HCAI_TAGLINE}</p>
           <AnimatePresence mode="wait">
             {decision ? (
               <motion.div
@@ -719,9 +741,9 @@ export function DemoLabClient() {
                 <DecisionField label="Action taken" value={decision.action} />
               </motion.div>
             ) : (
-              <div className="mt-5 grid min-h-[280px] place-items-center rounded-xl border border-dashed border-white/[0.06] bg-[#060a12]/80 px-4 py-12 text-center text-sm text-muted-foreground">
-                <Sparkles className="mb-2 size-5 text-ember-400/70" aria-hidden="true" />
-                Run a scenario to see the agent&apos;s decision.
+              <div className="relative z-[2] mt-5 grid min-h-[280px] place-items-center rounded-xl border border-dashed border-subtle bg-surface-muted px-4 py-12 text-center text-sm text-muted-foreground">
+                <ClipboardList className="mb-2 size-5 text-violet-300/70" aria-hidden="true" />
+                Run a scenario to see plain-language reasoning for each sponsorship decision.
               </div>
             )}
           </AnimatePresence>
@@ -733,7 +755,7 @@ export function DemoLabClient() {
       <GlassCard hover className={cardBodyClass} aria-label="Live event timeline">
         <div className="mb-2.5 text-sm font-semibold">Live Event Timeline</div>
         {events.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-white/10 py-6 text-center text-xs text-muted-foreground">
+          <div className="rounded-lg border border-dashed border-subtle py-6 text-center text-xs text-muted-foreground">
             No events yet — trigger a scenario above.
           </div>
         ) : (
@@ -743,7 +765,7 @@ export function DemoLabClient() {
                 key={i}
                 initial={{ opacity: 0, x: -8 }}
                 animate={{ opacity: 1, x: 0 }}
-                className="flex items-center gap-3 rounded-lg border border-white/5 bg-black/20 px-3 py-2 text-sm"
+                className="flex items-center gap-3 rounded-lg border border-subtle bg-surface-muted px-3 py-2 text-sm"
               >
                 <span className="shrink-0 font-mono text-xs text-muted-foreground">{e.time}</span>
                 <StatusBadge tone={e.tone}>
@@ -762,7 +784,7 @@ export function DemoLabClient() {
 
 function DecisionField({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="rounded-xl border border-white/[0.05] bg-[#060a12]/70 px-3 py-2.5">
+    <div className="rounded-xl border border-subtle bg-surface-muted px-3 py-2.5">
       <div className="text-[11px] uppercase tracking-wider text-muted-foreground">{label}</div>
       <div className="mt-1 text-sm">{value}</div>
     </div>
