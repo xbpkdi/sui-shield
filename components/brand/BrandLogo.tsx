@@ -9,28 +9,28 @@ const sizeStyles: Record<
 > = {
   xs: {
     box: "size-6 rounded-md",
-    mark: 12,
-    glow: "shadow-[0_0_14px_-4px_rgba(77,162,255,0.45)]",
+    mark: 13,
+    glow: "shadow-[0_0_12px_-3px_rgba(77,162,255,0.5),0_0_8px_-4px_rgba(255,107,53,0.35)]",
   },
   sm: {
     box: "size-7 rounded-lg",
-    mark: 14,
-    glow: "shadow-[0_0_16px_-4px_rgba(77,162,255,0.48)]",
+    mark: 15,
+    glow: "shadow-[0_0_14px_-3px_rgba(77,162,255,0.52),0_0_10px_-4px_rgba(255,107,53,0.38)]",
   },
   md: {
     box: "size-8 rounded-xl",
-    mark: 16,
-    glow: "shadow-[0_0_20px_-4px_rgba(77,162,255,0.5)]",
+    mark: 17,
+    glow: "shadow-[0_0_18px_-4px_rgba(77,162,255,0.55),0_0_12px_-5px_rgba(255,107,53,0.4)]",
   },
   lg: {
     box: "size-12 rounded-2xl",
-    mark: 24,
-    glow: "shadow-[0_0_40px_-8px_rgba(77,162,255,0.55)]",
+    mark: 26,
+    glow: "shadow-[0_0_36px_-6px_rgba(77,162,255,0.58),0_0_24px_-8px_rgba(255,107,53,0.42)]",
   },
   xl: {
     box: "size-14 rounded-2xl",
-    mark: 28,
-    glow: "shadow-[0_0_44px_-8px_rgba(255,107,53,0.4)]",
+    mark: 30,
+    glow: "shadow-[0_0_40px_-6px_rgba(77,162,255,0.5),0_0_28px_-8px_rgba(255,107,53,0.48)]",
   },
 };
 
@@ -47,7 +47,7 @@ export function BrandLogo({ size = "md", className, interactive = false }: Brand
   return (
     <div
       className={cn(
-        "relative grid shrink-0 place-items-center overflow-hidden bg-cinema-navy/40 ring-1 ring-white/10",
+        "relative grid shrink-0 place-items-center overflow-hidden border border-subtle bg-surface-muted",
         styles.box,
         styles.glow,
         interactive && "transition-transform duration-200 group-hover:scale-[1.03]",
