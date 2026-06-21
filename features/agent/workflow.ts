@@ -168,7 +168,7 @@ export async function runWorkflow(
     emit({ transactionIntentId: txId, phase: "OBSERVE", category: "Transaction", severity: "info", message: `Mint Badge intent received from wallet ${effectiveWallet.slice(0, 10)}…`, metadata: {} });
 
     setStep("policy", "running");
-    await delay(isReal ? 200 : 380);
+    await delay(isReal ? 0 : 380);
     emit({ transactionIntentId: txId, phase: "REASON", category: "Policy", severity: "info", message: "Action mint_badge is whitelisted. Gas estimate 0.004 SUI is within the 0.05 SUI limit.", metadata: { action, gasEstimate: 0.004 } });
     setStep("policy", "done");
 
@@ -182,17 +182,17 @@ export async function runWorkflow(
     setStep("sim", "done");
 
     setStep("dup", "running");
-    await delay(isReal ? 100 : 280);
+    await delay(isReal ? 0 : 280);
     emit({ transactionIntentId: txId, phase: "REASON", category: "Policy", severity: "info", message: "No duplicate intent found within the 30-second window.", metadata: {} });
     setStep("dup", "done");
 
     setStep("budget", "running");
-    await delay(isReal ? 100 : 220);
+    await delay(isReal ? 0 : 220);
     emit({ transactionIntentId: txId, phase: "REASON", category: "Policy", severity: "info", message: "Daily budget check passed. Remaining budget is sufficient.", metadata: {} });
     setStep("budget", "done");
 
     setStep("rpc", "running");
-    await delay(isReal ? 100 : 250);
+    await delay(isReal ? 0 : 250);
     emit({ transactionIntentId: txId, phase: "ACT", category: "RPC", severity: "info", message: "Primary RPC selected — latency 380ms, checkpoint fresh.", metadata: { rpcId: "rpc-1" } });
     setStep("rpc", "done");
 

@@ -11,9 +11,9 @@ import {
 } from "react";
 import { useSuiClient } from "@mysten/dapp-kit";
 import type { ZkLoginSession } from "@/lib/zklogin/types";
-import { loadSession, clearSession } from "@/lib/zklogin/session";
+import { clearSession, clearPersistedSession } from "@/lib/zklogin/session";
 import { startSignIn, completeSignIn } from "@/lib/zklogin/client";
-import { STALE_SESSION_MESSAGE, staleSessionReason } from "@/lib/zklogin/validate";
+
 import { getGoogleClientId } from "@/lib/sui/zklogin-config";
 
 interface ZkLoginContextValue {
@@ -34,41 +34,11 @@ export function ZkLoginProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Restore session from localStorage; drop entries from another network or stale maxEpoch.
+  // Fresh sign-in each visit — no localStorage restore (clears legacy lock-in).
   useEffect(() => {
-    let cancelled = false;
-
-    async function restore() {
-      const saved = loadSession();
-      if (!saved) {
-        if (!cancelled) setIsLoading(false);
-        return;
-      }
-
-      try {
-        const { epoch } = await suiClient.getLatestSuiSystemState();
-        const reason = staleSessionReason(saved, Number(epoch));
-        if (reason) {
-          clearSession();
-          if (!cancelled) {
-            setSession(null);
-            setError(STALE_SESSION_MESSAGE);
-          }
-        } else if (!cancelled) {
-          setSession(saved);
-        }
-      } catch {
-        if (!cancelled) setSession(saved);
-      } finally {
-        if (!cancelled) setIsLoading(false);
-      }
-    }
-
-    restore();
-    return () => {
-      cancelled = true;
-    };
-  }, [suiClient]);
+    clearPersistedSession();
+    setIsLoading(false);
+  }, []);
 
   const signIn = useCallback(async () => {
     const clientId = getGoogleClientId();

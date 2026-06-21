@@ -93,6 +93,11 @@ const config: Config = {
           "0%": { backgroundPosition: "200% 0" },
           "100%": { backgroundPosition: "-200% 0" },
         },
+        "ambient-drift": {
+          "0%, 100%": { transform: "translate(0, 0) scale(1)" },
+          "33%": { transform: "translate(14px, -10px) scale(1.03)" },
+          "66%": { transform: "translate(-10px, 12px) scale(0.97)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -100,10 +105,11 @@ const config: Config = {
         "pulse-ring": "pulse-ring 2s ease-in-out infinite",
         "fade-in": "fade-in 0.4s ease-out",
         shimmer: "shimmer 3s linear infinite",
+        "ambient-drift": "ambient-drift 32s ease-in-out infinite",
       },
       backgroundImage: {
         "cinema-radial":
-          "radial-gradient(ellipse 95% 65% at 50% -8%, rgba(77,162,255,0.28), transparent 58%), radial-gradient(ellipse 70% 55% at 92% 18%, rgba(155,89,255,0.2), transparent 52%), radial-gradient(ellipse 85% 50% at 8% 72%, rgba(77,162,255,0.14), transparent 50%), radial-gradient(ellipse 80% 55% at 78% 100%, rgba(255,107,53,0.22), transparent 55%), radial-gradient(ellipse 60% 40% at 42% 58%, rgba(255,107,53,0.08), transparent 50%)",
+          "radial-gradient(ellipse 95% 65% at 50% -8%, rgba(77,162,255,0.07), transparent 58%), radial-gradient(ellipse 70% 55% at 92% 18%, rgba(155,89,255,0.05), transparent 52%), radial-gradient(ellipse 85% 50% at 8% 72%, rgba(77,162,255,0.04), transparent 50%), radial-gradient(ellipse 80% 55% at 78% 100%, rgba(255,107,53,0.06), transparent 55%), radial-gradient(ellipse 60% 40% at 42% 58%, rgba(255,107,53,0.03), transparent 50%)",
         "card-shine":
           "linear-gradient(135deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.02) 40%, transparent 70%)",
       },

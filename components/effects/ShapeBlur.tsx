@@ -14,7 +14,7 @@ export function ShapeBlur() {
   useEffect(() => {
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const fine = window.matchMedia("(pointer: fine)").matches;
-    const narrow = window.matchMedia("(max-width: 1023px)").matches;
+    const narrow = window.matchMedia("(max-width: 767px)").matches;
     if (reduced || !fine || narrow) return;
 
     const blobs = [blobRef.current, blob2Ref.current, blob3Ref.current].filter(Boolean);
@@ -64,14 +64,15 @@ export function ShapeBlur() {
       />
       <div
         ref={blob2Ref}
-        className="blur-blob blur-blob-ember pointer-events-none absolute -right-24 bottom-1/3"
+        className="blur-blob blur-blob-ember pointer-events-none absolute -right-16 bottom-1/4"
         aria-hidden="true"
       />
       <div
-        ref={blob3Ref}
-        className="blur-blob blur-blob-violet pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2"
+        className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2"
         aria-hidden="true"
-      />
+      >
+        <div ref={blob3Ref} className="blur-blob blur-blob-violet" />
+      </div>
       <div
         className="blur-blob blur-blob-ember-soft pointer-events-none absolute left-1/4 bottom-1/4"
         aria-hidden="true"

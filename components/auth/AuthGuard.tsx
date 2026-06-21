@@ -2,9 +2,9 @@
 
 import { useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { Shield } from "lucide-react";
 import { useZkLogin } from "@/contexts/ZkLoginContext";
-import { BackgroundFx } from "@/components/layout/BackgroundFx";
+import { AuthSceneShell } from "@/components/layout/AuthSceneShell";
+import { BrandLogo } from "@/components/brand/BrandLogo";
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const { session, isLoading } = useZkLogin();
@@ -22,17 +22,14 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     const status = isLoading ? "Checking your session…" : "Redirecting to sign in…";
 
     return (
-      <div className="relative flex min-h-screen flex-col bg-cinema">
-        <BackgroundFx />
+      <AuthSceneShell className="flex min-h-screen flex-col">
         <div
           className="relative z-10 flex flex-1 flex-col items-center justify-center gap-4 px-6"
           role="status"
           aria-live="polite"
           aria-busy="true"
         >
-          <div className="grid size-12 place-items-center rounded-2xl gradient-cta shadow-[0_0_32px_-4px_rgba(77,162,255,0.5)]">
-            <Shield className="size-6 text-cinema-navy" strokeWidth={2.5} aria-hidden="true" />
-          </div>
+          <BrandLogo size="lg" />
           <p className="text-sm text-muted-foreground">{status}</p>
           <div className="flex gap-1" aria-hidden="true">
             {[0, 1, 2].map((i) => (
@@ -44,7 +41,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
             ))}
           </div>
         </div>
-      </div>
+      </AuthSceneShell>
     );
   }
 

@@ -1,8 +1,10 @@
 import type { ZkLoginSession, ZkLoginPendingState } from "./types";
 import { getActiveNetwork } from "@/lib/sui/network";
 
-/** Bumped when session shape/validation changes — invalidates stale localStorage entries. */
+/** Legacy key — cleared on boot; sessions are memory-only (no lock-in across visits). */
 const SESSION_KEY = "zklogin_session_v2";
+
+let memorySession: ZkLoginSession | null = null;
 
 /** maxEpoch is epochAtSignIn + 2; allow slack for RPC drift and epoch advancement. */
 export const MAX_EPOCH_DRIFT = 30;
@@ -40,28 +42,32 @@ export function isSessionValid(
   return true;
 }
 
+/** In-memory only — lost on refresh; never restored from localStorage. */
 export function loadSession(): ZkLoginSession | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = localStorage.getItem(SESSION_KEY);
-    if (!raw) return null;
-    const session = JSON.parse(raw) as ZkLoginSession;
-    if (!isSessionValid(session)) {
-      clearSession();
-      return null;
-    }
-    return session;
-  } catch {
+  if (!memorySession) return null;
+  if (!isSessionValid(memorySession)) {
+    clearSession();
     return null;
   }
+  return memorySession;
 }
 
 export function saveSession(session: ZkLoginSession): void {
-  localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+  memorySession = session;
 }
 
 export function clearSession(): void {
-  localStorage.removeItem(SESSION_KEY);
+  memorySession = null;
+  if (typeof window !== "undefined") {
+    localStorage.removeItem(SESSION_KEY);
+  }
+}
+
+/** Wipe legacy persisted sessions from older builds. */
+export function clearPersistedSession(): void {
+  if (typeof window !== "undefined") {
+    localStorage.removeItem(SESSION_KEY);
+  }
 }
 
 /** localStorage survives the Google OAuth redirect (sessionStorage can be lost in Safari). */

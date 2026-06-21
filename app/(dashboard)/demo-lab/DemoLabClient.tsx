@@ -367,7 +367,7 @@ export function DemoLabClient() {
     <DashboardPage>
       <PageHeader
         eyebrow="Demo Lab"
-        title="Live Simulation"
+        title="Agent Demo Lab"
         description={
           <>
             <span className="hidden sm:inline">
@@ -430,7 +430,7 @@ export function DemoLabClient() {
 
       <PageSection>
       <GlassCard hover accent="ember" className={cardBodyCompactClass} aria-label="Scenario selector">
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6 lg:gap-2.5">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-6 xl:gap-4">
           {scenarios.map((s) => {
             const willBeReal = s.key === "normal" && canRunReal;
             return (
@@ -439,7 +439,7 @@ export function DemoLabClient() {
                 onClick={() => handleRunScenario(s.key)}
                 disabled={running}
                 aria-label={`Run scenario: ${s.label}${willBeReal ? " (real)" : " (simulation)"}`}
-                className={`group flex flex-col items-start gap-1 rounded-xl border px-2.5 py-2 text-left text-xs transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 disabled:cursor-not-allowed disabled:opacity-50 data-cursor-hover ${
+                className={`group flex min-h-[4.5rem] flex-col items-start justify-between gap-1.5 rounded-xl border px-3 py-3 text-left text-xs transition-[border-color,background-color,box-shadow,color] duration-100 ease-out active:scale-[0.99] active:duration-75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 disabled:cursor-not-allowed disabled:opacity-50 data-cursor-hover ${
                   activeScenario === s.key && !running
                     ? "border-ember-500/40 bg-gradient-to-br from-blue-500/12 to-ember-500/10 shadow-[0_8px_28px_-10px_rgba(255,107,53,0.35)]"
                     : "border-white/8 bg-white/[0.03] hover:border-blue-400/25 hover:bg-blue-400/5"
@@ -462,7 +462,6 @@ export function DemoLabClient() {
       <PageSection delay={0.06}>
       <div className={cardGridDemoClass}>
         <GlassCard hover accent="blue" className={`relative overflow-hidden ${cardBodyClass}`}>
-          <div className="pointer-events-none absolute -right-16 -top-16 size-56 rounded-full bg-blue-400/10 blur-3xl" aria-hidden="true" />
           <div className="flex items-start justify-between">
             <div>
               <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
@@ -486,7 +485,7 @@ export function DemoLabClient() {
           </div>
 
           {/* User info */}
-          <div className="mt-4 rounded-xl border border-white/10 bg-black/30 p-3">
+          <div className="mt-5 rounded-xl border border-white/[0.06] bg-[#060a12]/70 p-4">
             {session ? (
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-xs">
@@ -554,22 +553,22 @@ export function DemoLabClient() {
           </AnimatePresence>
 
           {/* Mint button */}
-          <motion.button
-            whileTap={{ scale: 0.98 }}
+          <button
+            type="button"
             disabled={running || isProtective || alreadyMinted}
             onClick={() => handleRunScenario("normal")}
-            className="btn-magnetic group mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl gradient-cta px-5 py-3.5 text-sm font-bold text-cinema-navy shadow-[0_0_32px_-6px_rgba(255,107,53,0.5)] transition-shadow hover:shadow-[0_0_40px_-4px_rgba(255,107,53,0.65)] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 data-cursor-hover"
+            className="btn-magnetic group mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl gradient-cta px-5 py-3.5 text-sm font-bold text-cinema-navy shadow-[0_0_32px_-6px_rgba(255,107,53,0.5)] transition-[box-shadow,transform] duration-100 hover:shadow-[0_0_40px_-4px_rgba(255,107,53,0.65)] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 data-cursor-hover"
           >
             <Zap className="size-4" aria-hidden="true" />
             {running ? (mintStatus ?? "Working…") : "Mint Badge Gasless"}
-            <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
-          </motion.button>
+            <ArrowRight className="size-4 transition-transform duration-100 group-hover:translate-x-0.5" aria-hidden="true" />
+          </button>
           <p className="mt-2 text-center text-xs text-muted-foreground">
             Gas sponsored by app · {canRunReal ? `Sui ${networkLabel}` : "Simulation"}
           </p>
 
           {/* Flow steps */}
-          <div className={`mt-5 ${listCompactClass}`} role="list" aria-label="Transaction flow steps">
+          <div className={`mt-6 ${listCompactClass}`} role="list" aria-label="Transaction flow steps">
             {steps.map((step, i) => (
               <motion.div
                 key={step.id}
@@ -683,7 +682,7 @@ export function DemoLabClient() {
           </AnimatePresence>
         </GlassCard>
 
-        <GlassCard hover accent="violet" className={cardBodyClass} aria-label="Agent decision">
+        <GlassCard hover accent="none" className={cardBodyClass} aria-label="Agent decision">
           <div className="flex items-center gap-2 text-sm font-semibold">
             <Sparkles className="size-4 text-violet-400" aria-hidden="true" />
             Agent Decision
@@ -720,8 +719,8 @@ export function DemoLabClient() {
                 <DecisionField label="Action taken" value={decision.action} />
               </motion.div>
             ) : (
-              <div className="mt-4 grid place-items-center rounded-xl border border-dashed border-white/10 py-10 text-center text-sm text-muted-foreground">
-                <Sparkles className="mb-2 size-5 text-violet-400" aria-hidden="true" />
+              <div className="mt-5 grid min-h-[280px] place-items-center rounded-xl border border-dashed border-white/[0.06] bg-[#060a12]/80 px-4 py-12 text-center text-sm text-muted-foreground">
+                <Sparkles className="mb-2 size-5 text-ember-400/70" aria-hidden="true" />
                 Run a scenario to see the agent&apos;s decision.
               </div>
             )}
@@ -763,7 +762,7 @@ export function DemoLabClient() {
 
 function DecisionField({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="rounded-xl border border-white/5 bg-black/20 px-3 py-2.5">
+    <div className="rounded-xl border border-white/[0.05] bg-[#060a12]/70 px-3 py-2.5">
       <div className="text-[11px] uppercase tracking-wider text-muted-foreground">{label}</div>
       <div className="mt-1 text-sm">{value}</div>
     </div>

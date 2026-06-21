@@ -3,9 +3,10 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Shield, Loader2, AlertCircle } from "lucide-react";
+import { Loader2, AlertCircle } from "lucide-react";
 import { useZkLogin } from "@/contexts/ZkLoginContext";
-import { BackgroundFx } from "@/components/layout/BackgroundFx";
+import { AuthSceneShell } from "@/components/layout/AuthSceneShell";
+import { BrandLogo } from "@/components/brand/BrandLogo";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { Button } from "@/components/ui/button";
 import { getActiveNetwork, getNetworkLabel } from "@/lib/sui/network";
@@ -47,9 +48,7 @@ export function CallbackClient() {
   }
 
   return (
-    <div className="relative flex min-h-screen flex-col bg-cinema">
-      <BackgroundFx />
-
+    <AuthSceneShell className="flex min-h-screen flex-col">
       <div className="relative z-10 flex flex-1 flex-col items-center justify-center px-4 py-16">
         <motion.div
           className="w-full max-w-sm"
@@ -67,9 +66,7 @@ export function CallbackClient() {
               <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-blue-400 via-violet-400 to-ember-500" />
 
               <div className="relative flex flex-col items-center gap-5 p-4 text-center sm:p-6">
-                <div className="grid size-14 place-items-center rounded-2xl gradient-cta shadow-[0_0_40px_-8px_rgba(255,107,53,0.4)]">
-                  <Shield className="size-7 text-cinema-navy" strokeWidth={2.5} />
-                </div>
+                <BrandLogo size="xl" />
 
                 {error ? (
                   <div className="w-full space-y-4">
@@ -105,6 +102,6 @@ export function CallbackClient() {
       </div>
 
       <SiteFooter compact />
-    </div>
+    </AuthSceneShell>
   );
 }

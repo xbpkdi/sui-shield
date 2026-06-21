@@ -3,7 +3,11 @@ export const APP_NAME = "SuiShield";
 export const APP_SUBTITLE = "Gasless Agent";
 
 export const GITHUB_HANDLE = "xbpkdi";
-export const GITHUB_URL = `https://github.com/${GITHUB_HANDLE}`;
+export const GITHUB_REPO = "suishield";
+export const GITHUB_URL = `https://github.com/${GITHUB_HANDLE}/${GITHUB_REPO}`;
+
+/** Set after Vercel deploy — used in submission links and OAuth docs. */
+export const LIVE_DEMO_URL = process.env.NEXT_PUBLIC_APP_URL?.trim() || null;
 
 export const MAX_RETRY_ATTEMPTS = 3;
 export const RPC_TIMEOUT_MS = 5000;

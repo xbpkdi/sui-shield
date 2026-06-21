@@ -5,7 +5,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import {
-  Shield,
   Loader2,
   ArrowLeft,
   AlertCircle,
@@ -15,7 +14,8 @@ import {
 } from "lucide-react";
 import { useZkLogin } from "@/contexts/ZkLoginContext";
 import { getGoogleClientId } from "@/lib/sui/zklogin-config";
-import { BackgroundFx } from "@/components/layout/BackgroundFx";
+import { AuthSceneShell } from "@/components/layout/AuthSceneShell";
+import { BrandLogo } from "@/components/brand/BrandLogo";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { StatusBadge } from "@/components/layout/StatusBadge";
 import { Button } from "@/components/ui/button";
@@ -62,30 +62,6 @@ const perks = [
   },
 ] as const;
 
-function LoginSceneDecor() {
-  return (
-    <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
-      {/* Login-specific gradient frame */}
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-500/[0.07] via-transparent to-ember-500/[0.09]" />
-      <div className="absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-blue-500/[0.05] to-transparent lg:w-[42%]" />
-
-      {/* Orbital rings behind card */}
-      <div className="absolute left-1/2 top-1/2 size-[min(92vw,520px)] -translate-x-1/2 -translate-y-1/2 rounded-full border border-blue-400/10 lg:left-[68%]" />
-      <div className="absolute left-1/2 top-1/2 size-[min(78vw,440px)] -translate-x-1/2 -translate-y-1/2 rounded-full border border-violet-400/8 lg:left-[68%]" />
-      <motion.div
-        className="absolute left-1/2 top-1/2 size-[min(64vw,360px)] -translate-x-1/2 -translate-y-1/2 rounded-full border border-ember-400/12 lg:left-[68%]"
-        animate={{ scale: [1, 1.03, 1], opacity: [0.45, 0.75, 0.45] }}
-        transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
-      />
-
-      {/* Glow anchors */}
-      <div className="absolute -left-20 top-1/4 h-72 w-72 rounded-full bg-gradient-to-br from-blue-500/20 to-transparent blur-[100px] lg:left-[8%]" />
-      <div className="absolute bottom-1/4 right-0 h-80 w-80 rounded-full bg-gradient-to-tl from-ember-500/18 to-transparent blur-[110px] lg:right-[6%]" />
-      <div className="absolute left-1/2 top-12 h-48 w-48 -translate-x-1/2 rounded-full bg-violet-500/10 blur-[90px] lg:left-[30%] lg:translate-x-0" />
-    </div>
-  );
-}
-
 export function LoginClient() {
   const { session, signIn, error, isLoading } = useZkLogin();
   const router = useRouter();
@@ -116,10 +92,7 @@ export function LoginClient() {
   }
 
   return (
-    <div className="relative flex min-h-screen flex-col bg-cinema">
-      <BackgroundFx />
-      <LoginSceneDecor />
-
+    <AuthSceneShell className="flex min-h-screen flex-col">
       <Link
         href="/"
         onClick={markLandingVisit}
@@ -145,9 +118,7 @@ export function LoginClient() {
           </div>
 
           <div className="mb-6 flex items-center gap-3">
-            <div className="grid size-12 place-items-center rounded-2xl gradient-cta shadow-[0_0_40px_-8px_rgba(77,162,255,0.55)]">
-              <Shield className="size-6 text-cinema-navy" strokeWidth={2.5} />
-            </div>
+            <BrandLogo size="lg" />
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-blue-300/80">
                 SuiShield
@@ -273,6 +244,6 @@ export function LoginClient() {
       </div>
 
       <SiteFooter compact />
-    </div>
+    </AuthSceneShell>
   );
 }

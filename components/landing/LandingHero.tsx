@@ -57,7 +57,7 @@ export function LandingHero() {
             </Link>
             <Link
               href="/login"
-              className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-6 py-3 text-sm font-medium text-foreground backdrop-blur-sm transition-all hover:border-white/20 hover:bg-white/[0.07] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 min-[400px]:w-auto"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-6 py-3 text-sm font-medium text-foreground backdrop-blur-sm transition-[border-color,background-color,color] duration-100 ease-out active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 min-[400px]:w-auto"
             >
               Sign in with Google
             </Link>
@@ -79,7 +79,7 @@ export function LandingHero() {
               Agent Decision
             </span>
             <StatusBadge tone="success" pulse>
-              Simulation
+              Live preview
             </StatusBadge>
           </div>
           <div className="space-y-2.5">

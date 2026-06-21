@@ -1,12 +1,19 @@
 /**
  * RPC health service interface + mock implementation.
- * Real implementation should run server-side via /api/rpc-health.
+ * Real checks run server-side via /api/rpc-health (see real-health-service.ts).
  * Never ping private RPC endpoints from the browser.
  */
 
 import type { RpcHealthService, RpcHealthResult } from "@/lib/sui/interfaces";
+import { realRpcHealthService } from "@/lib/rpc/real-health-service";
 
 export type { RpcHealthResult };
+
+/** Prefer live RPC pings when a primary endpoint is configured. */
+export function getRpcHealthService(): RpcHealthService {
+  const hasPrimary = !!(process.env.SUI_RPC_PRIMARY?.trim() || process.env.NEXT_PUBLIC_SUI_NETWORK);
+  return hasPrimary ? realRpcHealthService : mockRpcHealthService;
+}
 
 export const mockRpcHealthService: RpcHealthService = {
   async checkAll(): Promise<RpcHealthResult[]> {

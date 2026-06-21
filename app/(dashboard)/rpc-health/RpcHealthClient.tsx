@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Activity } from "lucide-react";
 import { GlassCard } from "@/components/layout/GlassCard";
 import {
@@ -32,6 +33,67 @@ function statusTone(s: RpcStatus): "success" | "warning" | "danger" | "muted" {
 export function RpcHealthClient() {
   const rpcEndpoints = useSuiShieldStore((s) => s.rpcEndpoints);
   const activeRpcId = useSuiShieldStore((s) => s.activeRpcId);
+  const setRpcStatus = useSuiShieldStore((s) => s.setRpcStatus);
+  const setActiveRpc = useSuiShieldStore((s) => s.setActiveRpc);
+  const [liveCheckedAt, setLiveCheckedAt] = useState<string | null>(null);
+  const [checking, setChecking] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function refresh() {
+      setChecking(true);
+      try {
+        const res = await fetch("/api/rpc-health");
+        const data = (await res.json()) as {
+          ok: boolean;
+          endpoints?: Array<{
+            id: string;
+            name: string;
+            url: string;
+            role: string;
+            status: RpcStatus;
+            latencyMs: number;
+            successRate: number;
+            latestCheckpoint: number;
+            lastCheckedAt: string;
+          }>;
+          checkedAt?: string;
+        };
+
+        if (cancelled || !data.ok || !data.endpoints?.length) return;
+
+        for (const ep of data.endpoints) {
+          setRpcStatus(ep.id, {
+            name: ep.name,
+            url: ep.url,
+            role: ep.role as (typeof rpcEndpoints)[number]["role"],
+            status: ep.status,
+            latencyMs: ep.latencyMs,
+            successRate: ep.successRate,
+            latestCheckpoint: ep.latestCheckpoint,
+            lastCheckedAt: ep.lastCheckedAt,
+          });
+        }
+
+        const best = [...data.endpoints]
+          .filter((e) => e.status === "healthy" || e.status === "degraded")
+          .sort((a, b) => a.latencyMs - b.latencyMs)[0];
+        if (best) setActiveRpc(best.id);
+
+        setLiveCheckedAt(data.checkedAt ?? new Date().toISOString());
+      } finally {
+        if (!cancelled) setChecking(false);
+      }
+    }
+
+    void refresh();
+    const id = window.setInterval(refresh, 30_000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+  }, [setRpcStatus, setActiveRpc]);
 
   const activeRpc = rpcEndpoints.find((r) => r.id === activeRpcId);
 
@@ -40,8 +102,12 @@ export function RpcHealthClient() {
       <PageHeader
         eyebrow="Infrastructure"
         title="RPC Health"
-        description="Endpoint status is simulated. Real checks run server-side via /api/rpc-health."
-        badges={<StatusBadge tone="warning">Simulated Health Data</StatusBadge>}
+        description="Live JSON-RPC pings via /api/rpc-health. Private endpoint credentials never reach the browser."
+        badges={
+          <StatusBadge tone={checking ? "info" : "success"} pulse={checking}>
+            {checking ? "Checking…" : liveCheckedAt ? "Live checks" : "Polling"}
+          </StatusBadge>
+        }
       />
 
       <PageSection aria-label="RPC endpoints">
@@ -115,7 +181,7 @@ export function RpcHealthClient() {
               </div>
               <div className="mt-1 text-sm font-medium">{activeRpc.name}</div>
             </div>
-            <StatusBadge tone="warning">Simulated</StatusBadge>
+            <StatusBadge tone="success">Live</StatusBadge>
           </div>
           <div className="h-36" aria-label="RPC latency over time">
             <ResponsiveContainer width="100%" height="100%">

@@ -1,9 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { ScrollReveal } from "@/components/effects/ScrollReveal";
 
 type MaxWidth = "3xl" | "4xl" | "7xl";
 
@@ -23,20 +21,12 @@ export function DashboardPage({ children, maxWidth = "7xl", className }: Dashboa
   return (
     <div
       className={cn(
-        "relative mx-auto max-w-full space-y-6 px-4 py-4 pb-6 sm:space-y-8 sm:px-6 sm:py-5 sm:pb-8",
+        "relative mx-auto max-w-full space-y-5 px-4 py-5 pb-8 sm:space-y-7 sm:px-6 sm:py-6 sm:pb-10",
         maxWidthClass[maxWidth],
         className
       )}
     >
-      <div
-        className="pointer-events-none absolute -left-24 top-0 h-64 w-64 rounded-full bg-gradient-to-br from-blue-500/16 via-violet-500/8 to-transparent blur-[100px]"
-        aria-hidden="true"
-      />
-      <div
-        className="pointer-events-none absolute -right-20 top-1/3 h-48 w-48 rounded-full bg-gradient-to-bl from-ember-500/12 to-transparent blur-[90px]"
-        aria-hidden="true"
-      />
-      <div className="relative">{children}</div>
+      {children}
     </div>
   );
 }
@@ -51,12 +41,7 @@ interface PageHeaderProps {
 
 export function PageHeader({ eyebrow, title, description, badges, actions }: PageHeaderProps) {
   return (
-    <motion.header
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-      className="mb-2 flex flex-col gap-3 rounded-xl border border-white/10 bg-gradient-to-r from-blue-500/[0.1] via-white/[0.04] to-ember-500/[0.08] p-3.5 backdrop-blur-sm sm:p-4 md:flex-row md:items-end md:justify-between"
-    >
+    <header className="flex flex-col gap-3 rounded-xl border border-subtle bg-surface-card p-4 backdrop-blur-md sm:p-5 md:flex-row md:items-end md:justify-between">
       <div className="min-w-0 flex-1">
         <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-blue-300/80">
           {eyebrow}
@@ -76,13 +61,14 @@ export function PageHeader({ eyebrow, title, description, badges, actions }: Pag
           {actions}
         </div>
       )}
-    </motion.header>
+    </header>
   );
 }
 
 interface PageSectionProps {
   children: ReactNode;
   className?: string;
+  /** @deprecated No longer used — sections render instantly for snappy nav */
   delay?: number;
   "aria-label"?: string;
 }
@@ -90,14 +76,9 @@ interface PageSectionProps {
 export function PageSection({
   children,
   className,
-  delay = 0,
   "aria-label": ariaLabel,
 }: PageSectionProps) {
-  const content = (
-    <ScrollReveal className={className} delay={delay}>
-      {children}
-    </ScrollReveal>
-  );
+  const content = <div className={className}>{children}</div>;
 
   if (ariaLabel) {
     return <section aria-label={ariaLabel}>{content}</section>;
@@ -125,16 +106,16 @@ export const cardGridBentoClass =
 export const cardGridTwoColClass = "grid gap-6 lg:grid-cols-2";
 
 /** Demo lab split layout */
-export const cardGridDemoClass = "grid gap-6 lg:grid-cols-[1.05fr_1fr] lg:gap-7";
+export const cardGridDemoClass = "grid gap-6 sm:gap-8 lg:grid-cols-[1.05fr_1fr] lg:gap-10";
 
 /** Inline stat blocks inside a card */
 export const cardStatsClass = "grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4";
 
 /** Default card body padding */
-export const cardBodyClass = "p-4";
+export const cardBodyClass = "p-5 sm:p-6";
 
 /** Compact card body padding (KPI tiles, dense panels) */
-export const cardBodyCompactClass = "p-3.5";
+export const cardBodyCompactClass = "p-4 sm:p-5";
 
 /** Dense vertical lists inside a card */
-export const listCompactClass = "space-y-2";
+export const listCompactClass = "space-y-3";

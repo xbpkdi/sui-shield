@@ -3,6 +3,7 @@ import { TopBar } from "@/components/layout/TopBar";
 import { ProtectiveModeBanner } from "@/components/layout/ProtectiveModeBanner";
 import { BackgroundFx } from "@/components/layout/BackgroundFx";
 import { AuthGuard } from "@/components/auth/AuthGuard";
+import { JudgeBanner } from "@/components/dashboard/JudgeBanner";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -11,12 +12,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <BackgroundFx />
         <Sidebar />
         <div
-          className="flex min-h-screen min-w-0 flex-col lg:pl-[236px]"
+          className="relative z-0 flex min-h-screen min-w-0 flex-col lg:ml-[236px]"
           style={{ ["--sidebar-width" as string]: `${SIDEBAR_WIDTH}px` }}
         >
           <TopBar />
+          <JudgeBanner />
           <ProtectiveModeBanner />
-          <main className="flex-1 overflow-y-auto">{children}</main>
+          <main className="relative flex-1 overflow-y-auto">{children}</main>
         </div>
       </div>
     </AuthGuard>

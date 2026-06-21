@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { mockRpcHealthService } from "@/lib/rpc/health-service";
+import { getRpcHealthService } from "@/lib/rpc/health-service";
 
 /**
  * Server-side RPC health check endpoint.
@@ -7,7 +7,7 @@ import { mockRpcHealthService } from "@/lib/rpc/health-service";
  */
 export async function GET() {
   try {
-    const results = await mockRpcHealthService.checkAll();
+    const results = await getRpcHealthService().checkAll();
     return NextResponse.json({ ok: true, endpoints: results, checkedAt: new Date().toISOString() });
   } catch (error) {
     console.error("[rpc-health] check failed:", error);

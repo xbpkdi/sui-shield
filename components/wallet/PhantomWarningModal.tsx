@@ -52,17 +52,18 @@ export function PhantomWarningModal({
             aria-hidden="true"
           />
 
-          {/* Dialog */}
-          <motion.div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="phantom-warning-title"
-            className="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-amber-500/30 bg-[#0a0f25] p-6 shadow-2xl"
-            initial={{ opacity: 0, scale: 0.95, y: 12 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 12 }}
-            transition={{ duration: 0.18, ease: "easeOut" }}
-          >
+          {/* Dialog — flex centering so motion transform does not fight Tailwind translate */}
+          <div className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="phantom-warning-title"
+              className="pointer-events-auto w-full max-w-md rounded-2xl border border-amber-500/30 bg-[#0a0f25] p-6 shadow-2xl"
+              initial={{ opacity: 0, scale: 0.95, y: 12 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 12 }}
+              transition={{ duration: 0.18, ease: "easeOut" }}
+            >
             <button
               onClick={onCancel}
               className="absolute right-4 top-4 rounded-lg p-1 text-muted-foreground hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
@@ -192,6 +193,7 @@ export function PhantomWarningModal({
               </div>
             </div>
           </motion.div>
+          </div>
         </>
       )}
     </AnimatePresence>

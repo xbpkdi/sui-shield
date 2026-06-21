@@ -4,36 +4,31 @@ import { ShapeBlur } from "@/components/effects/ShapeBlur";
 
 export function BackgroundFx() {
   return (
-    <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden" aria-hidden="true">
-      <div className="absolute inset-0 bg-cinema-radial" />
-      <div className="absolute inset-0 bg-cinema-mesh opacity-90" />
-      <ShapeBlur />
+    <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden" aria-hidden="true">
+      <div className="absolute inset-0 bg-cinema" />
+      <div className="absolute inset-0 bg-cinema-depth" />
+      <div className="absolute inset-0 bg-cinema-mesh opacity-55" />
 
-      {/* Diagonal color wash */}
+      <div className="opacity-[0.42]">
+        <ShapeBlur />
+      </div>
+
+      {/* Slow ambient anchors */}
+      <div className="absolute -left-36 -top-28 h-[520px] w-[520px] animate-ambient-drift rounded-full bg-blue-500/[0.045] blur-[150px]" />
       <div
-        className="absolute inset-0 opacity-60"
-        style={{
-          background:
-            "linear-gradient(125deg, rgba(77,162,255,0.06) 0%, transparent 38%, rgba(155,89,255,0.05) 58%, transparent 72%, rgba(255,107,53,0.08) 100%)",
-        }}
+        className="absolute -right-44 top-[18%] h-[440px] w-[440px] animate-ambient-drift rounded-full bg-violet-500/[0.035] blur-[160px]"
+        style={{ animationDelay: "-9s" }}
       />
-
-      {/* Static cinematic anchors */}
-      <div className="absolute -left-32 -top-32 h-[560px] w-[560px] rounded-full bg-blue-500/14 blur-[130px]" />
-      <div className="absolute -right-40 top-1/4 h-[480px] w-[480px] rounded-full bg-violet-500/12 blur-[140px]" />
-      <div className="absolute -bottom-48 -right-32 h-[680px] w-[680px] rounded-full bg-ember-500/16 blur-[150px]" />
-      <div className="absolute bottom-0 left-1/2 h-[320px] w-[85%] -translate-x-1/2 rounded-full bg-gradient-to-t from-ember-600/14 via-ember-500/6 to-transparent blur-[90px]" />
-      <div className="absolute left-1/3 top-1/2 h-[240px] w-[50%] -translate-y-1/2 rounded-full bg-gradient-to-r from-blue-500/10 via-transparent to-violet-500/8 blur-[100px]" />
-
-      {/* Subtle grid */}
       <div
-        className="absolute inset-0 opacity-[0.05]"
-        style={{
-          backgroundImage:
-            "linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)",
-          backgroundSize: "48px 48px",
-        }}
+        className="absolute -bottom-40 -right-28 h-[560px] w-[560px] animate-ambient-drift rounded-full bg-ember-500/[0.05] blur-[170px]"
+        style={{ animationDelay: "-18s" }}
       />
+      <div className="absolute bottom-0 left-1/2 h-[280px] w-[88%] -translate-x-1/2 rounded-full bg-gradient-to-t from-ember-600/[0.06] via-ember-500/[0.025] to-transparent blur-[100px]" />
+      <div className="absolute left-[28%] top-[42%] h-[220px] w-[48%] rounded-full bg-gradient-to-r from-blue-500/[0.04] via-transparent to-violet-500/[0.03] blur-[110px]" />
+
+      <div className="absolute inset-0 bg-dashboard-vignette" />
+      <div className="absolute inset-0 bg-film-grain" />
+      <div className="absolute inset-0 bg-cinema-grid" />
     </div>
   );
 }

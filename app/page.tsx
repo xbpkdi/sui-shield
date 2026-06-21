@@ -13,9 +13,13 @@ import { BackgroundFx } from "@/components/layout/BackgroundFx";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { LandingHeader } from "@/components/layout/LandingHeader";
 import { LandingHero } from "@/components/landing/LandingHero";
+import { JudgeGuide } from "@/components/landing/JudgeGuide";
+import { OnChainProof } from "@/components/landing/OnChainProof";
+import { IntegrateSection } from "@/components/landing/IntegrateSection";
 import { PostAuthRedirect } from "@/components/auth/PostAuthRedirect";
 import { Marquee } from "@/components/effects/Marquee";
 import { ScrollReveal } from "@/components/effects/ScrollReveal";
+import { GlassCard, type GlassAccent } from "@/components/layout/GlassCard";
 
 export const metadata: Metadata = {
   title: "SuiShield Gasless Agent — Sui Overflow 2026",
@@ -23,42 +27,65 @@ export const metadata: Metadata = {
     "Application-layer gas sponsorship agent for Sui dApps. Live zkLogin + gasless mint on devnet, policy engine, RPC failover, and full agent reasoning trace.",
 };
 
-const features = [
+const iconTone: Record<GlassAccent, string> = {
+  blue: "text-blue-300",
+  violet: "text-violet-300",
+  ember: "text-ember-300",
+  emerald: "text-emerald-300",
+  amber: "text-amber-300",
+  none: "text-blue-300",
+};
+
+const iconBoxTone: Record<GlassAccent, string> = {
+  blue: "border-blue-500/25 bg-blue-500/10 group-hover:border-blue-400/40",
+  violet: "border-violet-500/25 bg-violet-500/10 group-hover:border-violet-400/40",
+  ember: "border-ember-500/25 bg-ember-500/10 group-hover:border-ember-400/40",
+  emerald: "border-emerald-500/25 bg-emerald-500/10 group-hover:border-emerald-400/40",
+  amber: "border-amber-500/25 bg-amber-500/10 group-hover:border-amber-400/40",
+  none: "border-subtle bg-surface-muted group-hover:border-blue-400/30",
+};
+
+const features: {
+  icon: typeof ShieldCheck;
+  title: string;
+  desc: string;
+  accent: GlassAccent;
+}[] = [
   {
     icon: ShieldCheck,
     title: "Gasless Policy Engine",
     desc: "Whitelist sponsored actions, set per-wallet limits, and govern who can spend your sponsor budget. All rules are deterministic and auditable.",
-    accent: "from-blue-500/30 via-blue-400/10 to-violet-500/5",
+    accent: "blue",
   },
   {
     icon: Shield,
     title: "Duplicate Transaction Guard",
     desc: "Block repeat intents within a configurable rolling window. Prevents double-spends and stops budget exhaustion from rapid retries.",
-    accent: "from-violet-500/30 via-violet-400/10 to-blue-500/5",
+    accent: "violet",
   },
   {
     icon: RefreshCcw,
     title: "RPC Failover",
     desc: "Health-monitored endpoint pool with automatic switching when latency or checkpoint freshness degrades beyond your threshold.",
-    accent: "from-emerald-500/28 via-emerald-400/10 to-blue-500/5",
+    accent: "emerald",
   },
   {
     icon: ShieldAlert,
     title: "Protective Mode",
     desc: "Pause write actions and queue intents when the Sui network appears unstable. Intents replay automatically when conditions recover.",
-    accent: "from-amber-500/28 via-ember-500/12 to-violet-500/5",
+    accent: "amber",
   },
   {
     icon: FileText,
     title: "Incident Reports",
     desc: "Auto-generated incident records with timeline, impact, recovery actions, and affected transactions. Exportable for post-mortems.",
-    accent: "from-blue-400/25 via-violet-500/12 to-ember-500/5",
+    accent: "ember",
   },
   {
     icon: Terminal,
     title: "Agent Action Logs",
     desc: "Full OBSERVE → REASON → ACT → RESULT trace for every agent decision. Auditable, filterable, and exportable.",
-    accent: "from-ember-500/28 via-blue-400/12 to-violet-500/5",
+    accent: "blue",
   },
 ];
 
@@ -84,6 +111,9 @@ export default function LandingPage() {
 
       <LandingHero />
 
+      <JudgeGuide />
+      <OnChainProof />
+
       {/* Tech stack marquee */}
       <section className="relative z-10 border-y border-white/5 py-6" aria-label="Tech stack">
         <Marquee items={stackItems} />
@@ -107,14 +137,18 @@ export default function LandingPage() {
         <ul className="grid gap-5 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3" role="list">
           {features.map((f, i) => (
             <ScrollReveal key={f.title} delay={i * 0.06}>
-              <li
-                className={`glass-card-hover group h-full rounded-2xl border border-white/8 bg-gradient-to-br p-4 sm:p-6 ${f.accent}`}
-              >
-                <div className="mb-4 grid size-10 place-items-center rounded-xl border border-white/10 bg-black/30 transition-colors group-hover:border-blue-400/30 group-hover:shadow-[0_0_24px_-8px_rgba(77,162,255,0.4)]">
-                  <f.icon className="size-4 text-blue-300" aria-hidden="true" />
-                </div>
-                <h3 className="font-display font-semibold">{f.title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{f.desc}</p>
+              <li className="h-full">
+                <GlassCard hover accent={f.accent} className="group h-full p-4 sm:p-6">
+                  <div
+                    className={`relative z-[2] mb-4 grid size-10 place-items-center rounded-xl border transition-colors group-hover:shadow-[0_0_20px_-8px_rgba(77,162,255,0.3)] ${iconBoxTone[f.accent]}`}
+                  >
+                    <f.icon className={`size-4 ${iconTone[f.accent]}`} aria-hidden="true" />
+                  </div>
+                  <h3 className="relative z-[2] font-display font-semibold">{f.title}</h3>
+                  <p className="relative z-[2] mt-2 text-sm leading-relaxed text-muted-foreground">
+                    {f.desc}
+                  </p>
+                </GlassCard>
               </li>
             </ScrollReveal>
           ))}
@@ -173,6 +207,8 @@ export default function LandingPage() {
         </ScrollReveal>
       </section>
 
+      <IntegrateSection />
+
       {/* Reverse marquee */}
       <section className="relative z-10 border-y border-white/5 py-5" aria-hidden="true">
         <Marquee
@@ -185,7 +221,7 @@ export default function LandingPage() {
       {/* CTA */}
       <section className="relative z-10 mx-auto max-w-7xl px-4 py-16 text-center sm:px-6 sm:py-24">
         <ScrollReveal>
-          <div className="overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-blue-500/20 via-violet-500/8 to-ember-500/18 p-6 shadow-[0_0_80px_-20px_rgba(77,162,255,0.35)] backdrop-blur-md sm:rounded-3xl sm:p-12">
+          <div className="overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-blue-500/8 via-violet-500/4 to-ember-500/6 p-6 shadow-[0_0_60px_-24px_rgba(77,162,255,0.15)] backdrop-blur-md sm:rounded-3xl sm:p-12">
             <h2 className="font-display text-3xl font-bold tracking-tight md:text-4xl">
               Try it in the Demo Lab
             </h2>

@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { Plus_Jakarta_Sans, Syne, JetBrains_Mono } from "next/font/google";
 import { SuiProvider } from "@/components/providers/SuiProvider";
 import { UiEffects } from "@/components/providers/UiEffects";
 import "./globals.css";
+
+const forceDarkScript = `(function(){try{var r=document.documentElement;r.classList.add("dark");r.classList.remove("light");localStorage.removeItem("suishield-theme")}catch(e){}})();`;
 
 const sans = Plus_Jakarta_Sans({
   subsets: ["latin"],
@@ -21,6 +24,7 @@ const mono = JetBrains_Mono({
   subsets: ["latin"],
   variable: "--font-mono",
   display: "swap",
+  weight: ["400", "500", "600", "700"],
 });
 
 export const metadata: Metadata = {
@@ -49,8 +53,15 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="dark" suppressHydrationWarning>
-      <body className={`${sans.variable} ${display.variable} ${mono.variable} font-sans antialiased`}>
+    <html
+      lang="en"
+      className={`${sans.variable} ${display.variable} ${mono.variable} dark`}
+      suppressHydrationWarning
+    >
+      <body className="font-mono antialiased">
+        <Script id="force-dark" strategy="beforeInteractive">
+          {forceDarkScript}
+        </Script>
         <SuiProvider>
           <UiEffects />
           {children}

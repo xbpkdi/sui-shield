@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { BrandLogo } from "@/components/brand/BrandLogo";
 import { markLandingVisit } from "@/components/auth/PostAuthRedirect";
 
 type AppBrandLinkProps = {
@@ -33,30 +33,26 @@ export function AppBrandLink({
         className
       )}
     >
-      <div
-        className={cn(
-          "grid shrink-0 place-items-center rounded-xl gradient-cta shadow-[0_0_20px_-4px_rgba(77,162,255,0.5)] transition-transform group-hover:scale-[1.03]",
-          variant === "sidebar" && "size-8",
-          variant === "compact" && "size-7 rounded-lg",
-          variant === "icon" && "size-8 rounded-lg"
-        )}
-      >
-        <Shield
-          className={cn("text-cinema-navy", variant === "sidebar" ? "size-4" : "size-3.5")}
-          strokeWidth={2.5}
-          aria-hidden="true"
-        />
-      </div>
+      <BrandLogo
+        size={variant === "sidebar" || variant === "icon" ? "md" : "sm"}
+        interactive
+      />
       {variant === "sidebar" && (
         <div className="flex flex-col leading-tight">
-          <span className="font-display text-sm font-semibold tracking-tight">SuiShield</span>
+          <span className="font-display text-sm font-semibold tracking-tight">
+            <span className="text-blue-200/95">Sui</span>
+            <span className="text-foreground/95">Shield</span>
+          </span>
           <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
             Gasless Agent
           </span>
         </div>
       )}
       {variant === "compact" && (
-        <span className="font-display text-sm font-semibold">SuiShield</span>
+        <span className="font-display text-sm font-semibold tracking-tight">
+          <span className="text-blue-200/95">Sui</span>
+          <span className="text-foreground/95">Shield</span>
+        </span>
       )}
     </Link>
   );

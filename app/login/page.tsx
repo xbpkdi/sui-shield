@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { Shield } from "lucide-react";
+import { AuthSceneShell } from "@/components/layout/AuthSceneShell";
+import { BrandLogo } from "@/components/brand/BrandLogo";
 import { LoginClient } from "./LoginClient";
 
 export const metadata: Metadata = {
@@ -9,14 +10,16 @@ export const metadata: Metadata = {
 
 function LoginFallback() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-cinema" role="status" aria-live="polite">
-      <div className="flex flex-col items-center gap-3">
-        <div className="grid size-10 place-items-center rounded-xl gradient-cta">
-          <Shield className="size-5 text-cinema-navy" strokeWidth={2.5} aria-hidden="true" />
-        </div>
+    <AuthSceneShell className="flex min-h-screen flex-col">
+      <div
+        className="relative z-10 flex flex-1 flex-col items-center justify-center gap-3"
+        role="status"
+        aria-live="polite"
+      >
+        <BrandLogo size="md" />
         <p className="text-sm text-muted-foreground">Loading sign in…</p>
       </div>
-    </div>
+    </AuthSceneShell>
   );
 }
 

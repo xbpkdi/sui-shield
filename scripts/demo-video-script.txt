@@ -1,0 +1,43 @@
+SuiShield — 3-Minute Demo Video Script (Sui Overflow 2026)
+=========================================================
+
+HOOK (0:00–0:15)
+"Sui dApps want gasless UX, but sponsoring gas safely is hard. SuiShield is an application-layer agent that controls who spends your sponsor budget — with a full auditable trace."
+
+LANDING (0:15–0:30)
+- Show suishield.vercel.app (or your live URL)
+- Scroll to "For judges" section
+- Point at on-chain contract IDs on devnet
+
+SIGN IN (0:30–0:50)
+- Click Sign in with Google
+- zkLogin creates Sui address — no wallet extension
+
+DEMO LAB — LIVE MINT (0:50–1:40)
+- Open Demo Lab → Normal Success
+- Watch OBSERVE → REASON → ACT → RESULT steps animate
+- Show Google sign prompt / transaction signing
+- SUCCESS: real digest appears
+- Click Sui Explorer link — badge minted, gas paid by app
+
+TX GUARDIAN (1:40–2:00)
+- Open TX Guardian
+- Expand transaction row
+- Show full agent trace + Explorer link
+
+STRESS TEST (2:00–2:30)
+- Demo Lab → RPC Failure
+- Show Incidents page populated
+- Show Agent Logs with OBSERVE/REASON/ACT/RESULT events
+
+POLICY (2:30–2:50)
+- Gasless Policy → toggle duplicate window
+- Re-run Duplicate Request scenario — policy blocks it
+
+CLOSE (2:50–3:00)
+"SuiShield: policy-controlled gas sponsorship, live on Sui devnet. GitHub link in description. Built for Sui Overflow 2026."
+
+TIPS
+- Use a fresh Google account if you already minted (contract blocks duplicates)
+- Record at 1080p, show browser URL bar for credibility
+- Paste live /api/status JSON in video description as proof

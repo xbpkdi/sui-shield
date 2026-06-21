@@ -14,14 +14,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { APP_VERSION } from "@/lib/constants";
+import { getDeploymentStatus } from "@/lib/deployment";
 import { getActiveNetwork, getDefaultRpcUrl, getNetworkLabel } from "@/lib/sui/network";
 
 export function SettingsClient() {
   const networkLabel = getNetworkLabel(getActiveNetwork());
   const primaryRpc = getDefaultRpcUrl();
-  const contractConfigured =
-    !!process.env.NEXT_PUBLIC_BADGE_PACKAGE_ID &&
-    !!process.env.NEXT_PUBLIC_STARTER_BADGE_REGISTRY_ID;
+  const deployment = getDeploymentStatus();
+  const contractConfigured = deployment.contractConfigured;
+  const liveMintReady = deployment.liveMintReady;
 
   return (
     <DashboardPage maxWidth="3xl">
@@ -49,8 +50,10 @@ export function SettingsClient() {
           <div className="mb-3 flex flex-wrap items-center gap-2">
             <KeyRound className="size-4 text-blue-300" aria-hidden="true" />
             <h2 className="text-sm font-semibold">Sponsor Service</h2>
-            {contractConfigured ? (
+            {liveMintReady ? (
               <StatusBadge tone="success">Live — two-phase API</StatusBadge>
+            ) : contractConfigured ? (
+              <StatusBadge tone="warning">Contract set — enable live mint</StatusBadge>
             ) : (
               <StatusBadge tone="warning">Contract env not set</StatusBadge>
             )}
@@ -158,8 +161,8 @@ export function SettingsClient() {
             <div className="flex justify-between gap-4">
               <dt className="text-muted-foreground">Integration</dt>
               <dd>
-                <StatusBadge tone={contractConfigured ? "success" : "warning"}>
-                  {contractConfigured ? `Live on ${networkLabel}` : "Simulation only"}
+                <StatusBadge tone={liveMintReady ? "success" : "warning"}>
+                  {liveMintReady ? `Live on ${networkLabel}` : "Simulation only"}
                 </StatusBadge>
               </dd>
             </div>

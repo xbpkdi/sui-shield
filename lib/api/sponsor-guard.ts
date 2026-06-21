@@ -68,9 +68,19 @@ export function checkSponsorOrigin(req: Request): NextResponse | null {
     }
   }
 
-  const vercelHost = process.env.VERCEL_URL?.trim();
-  if (vercelHost) {
-    allowedHosts.add(vercelHost);
+  for (const raw of [
+    process.env.VERCEL_URL?.trim(),
+    process.env.VERCEL_BRANCH_URL?.trim(),
+    process.env.VERCEL_PROJECT_PRODUCTION_URL?.trim(),
+    process.env.NEXT_PUBLIC_APP_URL?.trim(),
+  ]) {
+    if (!raw) continue;
+    try {
+      const normalized = raw.startsWith("http") ? raw : `https://${raw}`;
+      allowedHosts.add(new URL(normalized).host);
+    } catch {
+      allowedHosts.add(raw.replace(/^https?:\/\//, "").split("/")[0]);
+    }
   }
 
   const source = req.headers.get("origin") ?? req.headers.get("referer");
