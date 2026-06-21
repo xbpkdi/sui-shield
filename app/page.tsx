@@ -123,7 +123,7 @@ export default function LandingPage() {
       {/* Features — glassmorphism grid */}
       <section
         id="features"
-        className="relative z-10 mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-24"
+        className="relative z-10 mx-auto max-w-7xl scroll-mt-20 px-4 py-16 sm:px-6 sm:py-24"
         aria-labelledby="features-heading"
       >
         <ScrollReveal className="mb-14 text-center">
@@ -159,7 +159,7 @@ export default function LandingPage() {
       {/* How it works */}
       <section
         id="how-it-works"
-        className="relative z-10 mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-24"
+        className="relative z-10 mx-auto max-w-7xl scroll-mt-20 px-4 py-16 sm:px-6 sm:py-24"
         aria-labelledby="how-heading"
       >
         <ScrollReveal className="mb-14 text-center">

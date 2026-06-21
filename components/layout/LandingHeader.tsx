@@ -10,10 +10,10 @@ import { cn } from "@/lib/utils";
 
 
 const navLinks = [
-  { href: "#for-judges", label: "For judges" },
-  { href: "#hcai", label: "HCAI" },
+  { href: "#for-judges", label: "Judges" },
   { href: "#features", label: "Features" },
   { href: "#how-it-works", label: "How it works" },
+  { href: "#hcai", label: "HCAI" },
   { href: "/demo-lab", label: "Demo Lab", isRoute: true, accent: true },
 ] as const;
 

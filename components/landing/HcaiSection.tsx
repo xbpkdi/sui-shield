@@ -11,7 +11,7 @@ export function HcaiSection() {
   return (
     <section
       id="hcai"
-      className="relative z-10 mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20"
+      className="relative z-10 mx-auto max-w-7xl scroll-mt-20 px-4 py-16 sm:px-6 sm:py-20"
       aria-labelledby="hcai-heading"
     >
       <ScrollReveal className="mb-10 text-center">

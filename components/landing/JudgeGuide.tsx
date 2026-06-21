@@ -48,7 +48,7 @@ export function JudgeGuide() {
   return (
     <section
       id="for-judges"
-      className="relative z-10 mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20"
+      className="relative z-10 mx-auto max-w-7xl scroll-mt-20 px-4 py-16 sm:px-6 sm:py-20"
       aria-labelledby="judges-heading"
     >
       <ScrollReveal className="mb-10 text-center">
