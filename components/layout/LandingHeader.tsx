@@ -66,11 +66,11 @@ export function LandingHeader() {
   return (
     <>
       <header className="fixed inset-x-0 top-0 z-50 border-b border-subtle bg-surface-header backdrop-blur-md">
-        <div className="mx-auto grid h-14 max-w-7xl grid-cols-[1fr_auto_1fr] items-center px-4 sm:px-6">
+        <div className="relative mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:px-6">
           <AppBrandLink variant="compact" />
 
           <nav
-            className="hidden items-center gap-1 md:flex"
+            className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-1 md:flex"
             aria-label="Site navigation"
           >
             {navLinks.map((link) => (
@@ -78,7 +78,7 @@ export function LandingHeader() {
             ))}
           </nav>
 
-          <div className="flex items-center justify-end gap-2">
+          <div className="flex items-center gap-2">
             {session ? (
               <Link
                 href="/dashboard"
