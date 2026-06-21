@@ -70,8 +70,28 @@ add(
   env.NEXT_PUBLIC_DEMO_MODE === "false",
   env.NEXT_PUBLIC_DEMO_MODE === "false" ? "NEXT_PUBLIC_DEMO_MODE=false" : "set NEXT_PUBLIC_DEMO_MODE=false"
 );
+add(
+  "Production app URL set",
+  !!env.NEXT_PUBLIC_APP_URL,
+  env.NEXT_PUBLIC_APP_URL || "set NEXT_PUBLIC_APP_URL after Vercel deploy",
+  !env.NEXT_PUBLIC_APP_URL
+);
 add("Unit tests pass", run("npm run test"), "npm run test");
 add("Production build", run("npm run build"), "npm run build");
+
+let gitRemoteOk = false;
+try {
+  execSync("git remote get-url origin", { cwd: root, stdio: "pipe" });
+  gitRemoteOk = true;
+} catch {
+  gitRemoteOk = false;
+}
+add(
+  "Git remote configured",
+  gitRemoteOk,
+  gitRemoteOk ? "origin remote set" : "run: bash scripts/setup-github.sh (after gh auth login)",
+  !gitRemoteOk
+);
 
 const ghOk = run("gh auth status");
 add("GitHub CLI logged in", ghOk, ghOk ? "ready to push" : "run: gh auth login", !ghOk);
@@ -107,11 +127,16 @@ if (urgent.length) {
   }
 }
 
-const appUrl = env.NEXT_PUBLIC_APP_URL || "https://YOUR-VERCEL-URL.vercel.app";
-console.log("📋 Google OAuth — add these Authorized redirect URIs:");
-console.log(`   ${appUrl}/callback`);
-console.log("   http://localhost:3000/callback\n");
+if (env.NEXT_PUBLIC_APP_URL) {
+  console.log("📋 Google OAuth redirect URI (production):");
+  console.log(`   ${env.NEXT_PUBLIC_APP_URL}/callback\n`);
+} else {
+  console.log("📋 After deploy: set NEXT_PUBLIC_APP_URL in .env.local, redeploy, then add:");
+  console.log("   https://<your-vercel-url>/callback to Google OAuth\n");
+}
+console.log("📋 Google OAuth redirect URI (local): http://localhost:3000/callback");
 console.log("🎬 Demo video script: scripts/demo-video-script.txt");
-console.log("📡 After deploy, verify: curl $URL/api/status\n");
+console.log("📡 Verify deploy: curl https://<url>/api/status → liveMintReady: true");
+console.log("📡 Verify security: curl -X POST https://<url>/api/sponsor → HTTP 410\n");
 
 process.exit(passed === checks.length ? 0 : 1);
