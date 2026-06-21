@@ -71,7 +71,7 @@ export function JudgeGuide() {
         {judgeSteps.map((item, i) => (
           <ScrollReveal key={item.step} delay={i * 0.05}>
             <li className="h-full">
-              <GlassCard hover accent="blue" className="flex h-full flex-col p-5">
+              <GlassCard hover accent="blue" className="flex h-full flex-col bg-gradient-to-br from-[#1a0a2e] via-[#0d0d1a] to-[#050508] p-5">
                 <div className="relative z-[2] mb-3 flex items-center gap-2">
                   <span className="grid size-7 place-items-center rounded-lg border border-blue-400/20 bg-blue-400/10 font-mono text-xs font-semibold text-blue-300">
                     {item.step}
